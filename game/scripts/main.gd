@@ -1,47 +1,50 @@
 extends Control
-## Start screen: title, an idle tower with the spark climbing floor by floor, and the
-## build info at the bottom so a phone tester always knows which build is running.
-## The real combat screen arrives in M2; this scene only proves layout, timing and deploy.
+## Start screen: title, a small idle tower with the climbing spark, the way into a fight and the
+## build info. A long press on the title opens the debug menu (seed, hour, scenario).
 
 const TICK := 0.6
+const LONG_PRESS := 0.7
 ## Room ids from the shared content file; names and guild colours come from res://data/content.json.
 const FLOORS := ["waffenkammer", "schmiede", "kleineGlocke", "feder", "brennofen", "echo", "bollwerk", "laeutwerk"]
-const BRASS := Color(0.89, 0.71, 0.31)
-const NIGHT := Color(0.071, 0.067, 0.102)
-const PANEL := Color(0.15, 0.14, 0.2)
-const PANEL_LIT := Color(0.27, 0.23, 0.3)
-const MUTED := Color(0.63, 0.61, 0.71)
 
 var floor_panels: Array[PanelContainer] = []
 var spark := 0
-var loops := 0
-var loop_label: Label
+var debug_panel: PanelContainer
+var debug_seed := 1
+var debug_hour := 6
+var debug_scenario := -1
+var debug_labels := {}
+var _press_started := -1.0
 
 
 func _ready() -> void:
+	var bg := ColorRect.new()
+	bg.color = UhrStyle.NIGHT
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(bg)
+
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right"]:
 		margin.add_theme_constant_override("margin_" + side, 20)
 	margin.add_theme_constant_override("margin_top", 36)
-	margin.add_theme_constant_override("margin_bottom", 20)
+	margin.add_theme_constant_override("margin_bottom", 18)
 	add_child(margin)
 
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 6)
+	col.add_theme_constant_override("separation", 8)
 	margin.add_child(col)
 
-	col.add_child(_label("Uhrturm", 44, BRASS))
-	col.add_child(_label("Der Funke steigt. Um Mitternacht schlägt der Turm.", 15, MUTED))
-
-	var spacer := Control.new()
-	spacer.custom_minimum_size.y = 14
-	col.add_child(spacer)
+	var title := UhrStyle.label("Uhrturm", 44, UhrStyle.BRASS)
+	title.mouse_filter = Control.MOUSE_FILTER_STOP
+	title.gui_input.connect(_on_title_input)
+	col.add_child(title)
+	col.add_child(UhrStyle.label("Der Funke steigt. Um Mitternacht schlägt der Turm.", 15, UhrStyle.MUTED))
 
 	var tower := VBoxContainer.new()
 	tower.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	tower.alignment = BoxContainer.ALIGNMENT_END
-	tower.add_theme_constant_override("separation", 4)
+	tower.add_theme_constant_override("separation", 3)
 	col.add_child(tower)
 	# Floor 0 is the foundation and sits at the bottom, so add from the top down.
 	for i in range(FLOORS.size() - 1, -1, -1):
@@ -49,11 +52,26 @@ func _ready() -> void:
 		tower.add_child(p)
 		floor_panels.push_front(p)
 
-	loop_label = _label("Runde 0", 13, MUTED)
-	loop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	col.add_child(loop_label)
+	var fight := UhrStyle.button("Kampf ansehen", true)
+	fight.custom_minimum_size.y = 58
+	fight.pressed.connect(func() -> void: _open_fight(int(Time.get_unix_time_from_system()) % 100000, -1, 0))
+	col.add_child(fight)
+
+	col.add_child(UhrStyle.label("Vorführ-Türme", 13, UhrStyle.MUTED))
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	for i in UhrScenarios.SHOWCASES.size():
+		var b := UhrStyle.button(UhrScenarios.SHOWCASES[i].name)
+		b.add_theme_font_size_override("font_size", 15)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(_open_fight.bind(i + 1, i, 0))
+		grid.add_child(b)
+	col.add_child(grid)
+
 	var rooms_total: int = UhrContent.data().rooms.size()
-	var info := _label("%s · %d Räume" % [_build_info(), rooms_total], 12, MUTED)
+	var info := UhrStyle.label("%s · %d Räume" % [_build_info(), rooms_total], 12, UhrStyle.MUTED)
 	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(info)
 
@@ -65,52 +83,29 @@ func _ready() -> void:
 	_light(0)
 
 
+func _open_fight(seed: int, showcase: int, hour: int) -> void:
+	CombatView.pending = UhrScenarios.build(seed, showcase, hour)
+	get_tree().change_scene_to_file("res://scenes/combat.tscn")
+
+
 func _on_tick() -> void:
-	spark += 1
-	if spark >= floor_panels.size():
-		spark = 0
-		loops += 1
-		loop_label.text = "Runde %d" % loops
+	spark = (spark + 1) % floor_panels.size()
 	_light(spark)
 
 
 func _light(index: int) -> void:
 	for i in floor_panels.size():
-		var lit := i == index
 		var box: StyleBoxFlat = floor_panels[i].get_theme_stylebox("panel")
-		box.bg_color = PANEL_LIT if lit else PANEL
-		box.border_width_left = 8 if lit else 4
-	var p := floor_panels[index]
-	p.pivot_offset = p.size / 2
-	var tw := create_tween()
-	tw.tween_property(p, "scale", Vector2(1.03, 1.03), 0.08)
-	tw.tween_property(p, "scale", Vector2.ONE, 0.18)
+		box.bg_color = UhrStyle.PANEL_LIT if i == index else UhrStyle.PANEL
+		box.border_width_left = 8 if i == index else 4
 
 
 func _floor_panel(room: Dictionary) -> PanelContainer:
 	var p := PanelContainer.new()
-	var box := StyleBoxFlat.new()
-	box.bg_color = PANEL
-	box.border_color = Color(UhrContent.guild(room.guild).color)
-	box.set_border_width_all(0)
-	box.border_width_left = 4
-	box.set_corner_radius_all(6)
-	box.content_margin_left = 12
-	box.content_margin_top = 10
-	box.content_margin_bottom = 10
-	p.add_theme_stylebox_override("panel", box)
-	p.custom_minimum_size.y = 52
-	p.add_child(_label(room.name, 16, Color(0.93, 0.91, 0.96)))
+	p.add_theme_stylebox_override("panel", UhrStyle.box(UhrStyle.PANEL, 6, 4, UhrStyle.guild_color(room.guild)))
+	p.custom_minimum_size.y = 32
+	p.add_child(UhrStyle.label(room.name, 14, UhrStyle.TEXT, false))
 	return p
-
-
-func _label(text: String, size: int, color: Color) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", color)
-	return l
 
 
 ## build_info.json is written by CI right before the export; locally it is missing.
@@ -121,3 +116,87 @@ func _build_info() -> String:
 	if typeof(d) != TYPE_DICTIONARY:
 		return "Build unbekannt"
 	return "Build %s · %s" % [d.get("commit", "?"), d.get("built", "?")]
+
+
+# ------------------------------------------------------------------ debug menu
+
+
+func _on_title_input(event: InputEvent) -> void:
+	var down: bool = (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT) or event is InputEventScreenTouch
+	if not down:
+		return
+	if event.pressed:
+		_press_started = Time.get_ticks_msec() / 1000.0
+	elif _press_started >= 0.0:
+		if Time.get_ticks_msec() / 1000.0 - _press_started >= LONG_PRESS:
+			_toggle_debug()
+		_press_started = -1.0
+
+
+func _toggle_debug() -> void:
+	if debug_panel:
+		debug_panel.queue_free()
+		debug_panel = null
+		return
+	debug_panel = PanelContainer.new()
+	var sb := UhrStyle.box(Color(0.19, 0.17, 0.25), 14)
+	sb.set_content_margin_all(16)
+	debug_panel.add_theme_stylebox_override("panel", sb)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 8)
+	col.add_child(UhrStyle.label("Debug", 20, UhrStyle.BRASS))
+	col.add_child(_stepper("Seed", "seed", [-100, -1, 1, 100]))
+	col.add_child(_stepper("Stunde", "hour", [-1, 1]))
+	col.add_child(_stepper("Szenario", "scenario", [-1, 1]))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var close := UhrStyle.button("Schließen")
+	close.pressed.connect(_toggle_debug)
+	var go := UhrStyle.button("Kampf starten", true)
+	go.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	go.pressed.connect(func() -> void: _open_fight(debug_seed, debug_scenario, debug_hour))
+	row.add_child(close)
+	row.add_child(go)
+	col.add_child(row)
+	debug_panel.add_child(col)
+	debug_panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	debug_panel.offset_top = -300
+	add_child(debug_panel)
+	_refresh_debug()
+
+
+func _stepper(title: String, key: String, steps: Array) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	var name := UhrStyle.label(title, 15, UhrStyle.MUTED, false)
+	name.custom_minimum_size.x = 76
+	row.add_child(name)
+	var value := UhrStyle.label("", 17, UhrStyle.TEXT, false)
+	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	debug_labels[key] = value
+	for st in steps:
+		var b := UhrStyle.button(("+%d" % st) if st > 0 else str(st))
+		b.add_theme_font_size_override("font_size", 14)
+		b.custom_minimum_size.x = 50
+		b.pressed.connect(_debug_step.bind(key, st))
+		row.add_child(b)
+	row.add_child(value)
+	row.move_child(value, 1)
+	return row
+
+
+func _debug_step(key: String, delta: int) -> void:
+	match key:
+		"seed":
+			debug_seed = maxi(0, debug_seed + delta)
+		"hour":
+			debug_hour = clampi(debug_hour + delta, 1, 12)
+		"scenario":
+			debug_scenario = wrapi(debug_scenario + delta, -1, UhrScenarios.SHOWCASES.size())
+	_refresh_debug()
+
+
+func _refresh_debug() -> void:
+	debug_labels.seed.text = str(debug_seed)
+	debug_labels.hour.text = str(debug_hour)
+	debug_labels.scenario.text = "Zufall" if debug_scenario < 0 else UhrScenarios.SHOWCASES[debug_scenario].name

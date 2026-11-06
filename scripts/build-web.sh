@@ -17,4 +17,6 @@ rm -rf "$root/build/web" && mkdir -p "$root/build/web"
 "$godot" --headless --path "$root/game" --import >/dev/null 2>&1 || true
 "$godot" --headless --path "$root/game" --export-release "Web" "$root/build/web/index.html"
 test -s "$root/build/web/index.wasm" || { echo "export failed: index.wasm missing" >&2; exit 1; }
+# Home screen support: manifest and icons (see game/web/README.txt).
+cp "$root"/game/web/manifest.webmanifest "$root"/game/web/icon-*.png "$root/build/web/"
 echo "build/web: $(du -sh "$root/build/web" | cut -f1), wasm gzip $(gzip -9 -c "$root/build/web/index.wasm" | wc -c | awk '{printf "%.1f MB", $1/1e6}')"

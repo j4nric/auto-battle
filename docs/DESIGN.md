@@ -222,7 +222,7 @@ Keine Stat-Boosts kaufen, nur Optionen. Die Stärke muss aus dem Build kommen.
 |---|---|---|
 | M0 | Fundament | Repo-Struktur, Godot-Projekt, CI, Deploy, Cockpit, Agents |
 | M1 | Kern in Godot | Labor auf TypeScript, Inhalte als Daten, Engine portiert, Golden-Vektoren für Kämpfe |
-| M2 | Kampf spielbar | Zwei Türme, Funke animiert, auf dem Handy |
+| M2 | Kampf spielbar | Zwei Türme, Funke animiert, auf dem Handy, Debug-Menü, als App auf den Startbildschirm |
 | M3 | Run spielbar | Werkstatt, Vorzeichen, 12 Stunden, Speichern |
 | M4 | Balance-Runde 2 | Glocken und Wehr stärken, Zeitschleife bremsen, Stunden 2 bis 4 schwerer |
 | M5 | Juice | Animationen, Partikel, Haptik, Klang |
