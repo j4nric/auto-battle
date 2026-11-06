@@ -205,7 +205,8 @@ static func generate_monster(p_seed: int, h: int, diff: float) -> Dictionary:
 	var pool: Array = all.filter(func(x: Dictionary) -> bool: return x.guild == guild)
 	var target := mini(UhrTower.BASE_FLOORS, 2 + h)
 	var rooms: Array = []
-	var base := (h - 1) / 3.0
+	# Rivals gain tiers quickly so hours 2 to 4 are a real test (M4).
+	var base := (h - 1) / 1.25
 	var alloy_ids: Array = UhrContent.data().alloys.map(func(a: Dictionary) -> String: return a.id)
 	for tries in 40:
 		if UhrTower.floors_used(rooms) >= target:
