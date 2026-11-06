@@ -1,29 +1,29 @@
 // Simulation: lässt Bots viele Runs spielen und schreibt einen Balance-Bericht.
 // Aufruf: node sim/simulate.js [--runs 200] [--seed 1]
 import { writeFileSync, mkdirSync } from 'node:fs';
-import { ROOMS, GUILDS, FUSIONS } from '../src/content/rooms.js';
-import { ALLOYS } from '../src/content/alloys.js';
-import { CONFIG, DECAY_START } from '../src/engine/combat.js';
-import * as T from '../src/engine/tower.js';
-import { playRun, HOURS, SHOP } from '../src/run/run.js';
-import { makeBots, score } from '../src/run/bots.js';
-import { Rng, hashSeed } from '../src/rng.js';
+import { ROOMS, GUILDS, FUSIONS, ALLOYS } from '../src/content.ts';
+import { CONFIG, DECAY_START } from '../src/engine/combat.ts';
+import * as T from '../src/engine/tower.ts';
+import { playRun, HOURS, SHOP, type Run, type GhostPool } from '../src/run/run.ts';
+import { makeBots, score } from '../src/run/bots.ts';
+import { Rng, hashSeed } from '../src/rng.ts';
 
-const args = Object.fromEntries(
-  process.argv.slice(2).reduce((acc, a, i, all) => (a.startsWith('--') ? [...acc, [a.slice(2), all[i + 1]]] : acc), []),
-);
+const args: Record<string, string | true> = {};
+process.argv.slice(2).forEach((a, i, all) => {
+  if (a.startsWith('--')) args[a.slice(2)] = all[i + 1] && !all[i + 1].startsWith('--') ? all[i + 1] : true;
+});
 const SMOKE = 'smoke' in args;
 const RUNS = Number(args.runs ?? (SMOKE ? 15 : 200));
 const SEED = Number(args.seed ?? 1);
 const TICK_SECONDS = 0.6;
 const costRunsFor = (n) => Math.max(20, Math.round(n / 3));
 
-const pct = (x) => `${(100 * x).toFixed(0)} %`;
-const avg = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
-const fmt = (x, d = 1) => x.toFixed(d);
-const table = (head, rows) =>
+const pct = (x: number) => `${(100 * x).toFixed(0)} %`;
+const avg = (xs: number[]): number => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+const fmt = (x: number, d = 1) => x.toFixed(d);
+const table = (head: Array<string | number>, rows: Array<Array<string | number>>) =>
   [`| ${head.join(' | ')} |`, `|${head.map(() => '---').join('|')}|`, ...rows.map((r) => `| ${r.join(' | ')} |`)].join('\n');
-const out = [];
+const out: string[] = [];
 const say = (s = '') => {
   out.push(s);
   console.log(s);
@@ -31,9 +31,9 @@ const say = (s = '') => {
 const t0 = performance.now();
 
 // ------------------------------------------------------------------ Hauptlauf
-function runBatch(botNames, runs, seedBase, ghostPool = {}) {
+function runBatch(botNames: string[], runs: number, seedBase: number, ghostPool: GhostPool = {}): Record<string, Summary[]> {
   const bots = makeBots();
-  const results = Object.fromEntries(botNames.map((b) => [b, []]));
+  const results: Record<string, Summary[]> = Object.fromEntries(botNames.map((b) => [b, [] as Summary[]]));
   for (let i = 0; i < runs; i++) {
     for (const b of botNames) {
       const run = playRun(hashSeed(seedBase, i), bots[b](), { ghostPool });
@@ -43,7 +43,9 @@ function runBatch(botNames, runs, seedBase, ghostPool = {}) {
   return results;
 }
 
-function summarize(run) {
+type Summary = ReturnType<typeof summarize>;
+
+function summarize(run: Run) {
   const fights = run.fights.filter((f) => !f.skipped);
   return {
     seed: run.seed,
@@ -54,8 +56,8 @@ function summarize(run) {
     tower: run.tower,
     fusions: run.fusionsFound,
     fights: fights.map((f) => ({
-      hour: f.hour, won: f.won, ticks: f.ticks, ghost: f.ghost, omen: f.omen,
-      stats: f.roomStats,
+      hour: f.hour, won: !!f.won, ticks: f.ticks ?? 0, ghost: !!f.ghost, omen: f.omen,
+      stats: f.roomStats ?? [],
     })),
     omens: run.fights.map((f) => f.omen),
   };
@@ -113,7 +115,7 @@ const baseMid = avg(tk.map((r) => (r.midnight ? 1 : 0)));
 const roomRows = Object.values(ROOMS).map((def) => {
   const offered = tk.filter((r) => r.guilds.includes(def.guild));
   const withRoom = tk.filter((r) => r.tower.rooms.some((x) => x.id === def.id));
-  const shares = [];
+  const shares: number[] = [];
   for (const r of tk) {
     for (const f of r.fights) {
       const total = f.stats.reduce((s, x) => s + x.dmg + x.burn * 2.5 + x.poison * 8 + x.shield * 0.6 + x.heal * 0.6, 0);
@@ -146,7 +148,7 @@ say();
 
 say(`## 4. Zunft-Kombinationen (Tüftler)`);
 say();
-const combos = {};
+const combos: Record<string, Summary[]> = {};
 for (const r of tk) (combos[r.guilds.map((g) => GUILDS[g].name).join(' + ')] ??= []).push(r);
 say(
   table(
@@ -177,7 +179,7 @@ const alloyRows = Object.values(ALLOYS).map((a) => {
   const rs = tk.filter((r) => r.tower.rooms.some((x) => x.alloy === a.id));
   return [a.name, a.text, rs.length, rs.length ? pct(avg(rs.map((r) => (r.midnight ? 1 : 0)))) : '–'];
 });
-const recipeRows = [];
+const recipeRows: string[][] = [];
 for (const w of SMOKE ? [] : [1, 4, 8]) {
   SHOP.recipePull = w;
   const res = runBatch(['tüftler', 'kodex'], costRunsFor(RUNS), SEED + 2000);
@@ -195,8 +197,8 @@ say();
 // ------------------------------------------------------------------ Reihenfolge
 say(`## 6. Spielt die Reihenfolge eine Rolle?`);
 say();
-const deltas = [];
-const worse = [];
+const deltas: number[] = [];
+const worse: number[] = [];
 const rngShuffle = new Rng(hashSeed(SEED, 'shuffle'));
 for (const r of tk.filter((r) => r.tower.rooms.length >= 3).slice(0, 80)) {
   const fake = { seed: r.seed, hour: HOURS };
@@ -218,16 +220,16 @@ say();
 // ------------------------------------------------------------------ Tempo
 say(`## 7. Tempo: kompakt gegen breit`);
 say();
-const byFloors = {};
+const byFloors: Record<number, Summary[]> = {};
 for (const r of [...tk, ...main['kompakt-5']]) (byFloors[T.floorsUsed(r.tower)] ??= []).push(r);
 say(table(
   ['Belegte Etagen im End-Turm', 'Runs', 'Mitternacht'],
-  Object.entries(byFloors).sort((a, b) => a[0] - b[0]).map(([k, rs]) => [k, rs.length, pct(avg(rs.map((r) => (r.midnight ? 1 : 0))))]),
+  Object.entries(byFloors).sort((a, b) => Number(a[0]) - Number(b[0])).map(([k, rs]) => [k, rs.length, pct(avg(rs.map((r) => (r.midnight ? 1 : 0))))]),
 ));
 say();
 
 const costRuns = costRunsFor(RUNS);
-const costRows = [];
+const costRows: Array<Array<string | number>> = [];
 for (const c of SMOKE ? [] : [0, 0.5, 1]) {
   CONFIG.emptyFloorCost = c;
   const res = runBatch(['tüftler', 'kompakt-5'], costRuns, SEED + 1000);
@@ -249,9 +251,9 @@ say(`## 8. Vielfalt der Builds (Tüftler)`);
 say();
 const keyRooms = (t) => t.rooms.map((r) => r.id).sort().join(',');
 const uniq = new Set(tk.map((r) => keyRooms(r.tower)));
-const guildDom = {};
+const guildDom: Record<string, number> = {};
 for (const r of tk) {
-  const cnt = {};
+  const cnt: Record<string, number> = {};
   for (const x of r.tower.rooms) cnt[ROOMS[x.id].guild] = (cnt[ROOMS[x.id].guild] ?? 0) + ROOMS[x.id].height;
   const top = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'leer';
   guildDom[top] = (guildDom[top] ?? 0) + 1;
@@ -269,7 +271,7 @@ say(`_Laufzeit ${fmt((performance.now() - t0) / 1000, 0)} s._`);
 
 // ------------------------------------------------------------------ Smoke-Prüfungen
 if (SMOKE) {
-  const problems = [];
+  const problems: string[] = [];
   const blowouts = Object.values(main).flat().flatMap((r) => r.fights).filter((f) => f.ticks <= 5).length;
   if (blowouts) problems.push(`${blowouts} Kämpfe nach höchstens 5 Takten entschieden (Endlos-Combo?)`);
   // Same bot list and seed: the shared ghost pool fills identically, so the first runs must match.

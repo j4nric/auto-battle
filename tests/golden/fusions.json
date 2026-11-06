@@ -1,0 +1,3452 @@
+{
+ "generator": "lab/tools/golden.ts",
+ "fusions": [
+  {
+   "input": [
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": "gold"
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": "gold"
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "zahnrad",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "zahnrad",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "feder",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 3,
+     "alloy": "quecksilber"
+    }
+   ],
+   "output": [
+    {
+     "id": "feder",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 3,
+     "alloy": "quecksilber"
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 0,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": "rost"
+    },
+    {
+     "id": "echo",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 0,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": "rost"
+    },
+    {
+     "id": "echo",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "echo",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 0,
+     "alloy": "gold"
+    }
+   ],
+   "output": [
+    {
+     "id": "echo",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 0,
+     "alloy": "gold"
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": "glas"
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": "glas"
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": "quecksilber"
+    }
+   ],
+   "output": [
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": "quecksilber"
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 3,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "giftkueche",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 3,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "giftkueche",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "unruh",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": "gold"
+    },
+    {
+     "id": "quecksilber",
+     "tier": 0,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "echo",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "unruh",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": "gold"
+    },
+    {
+     "id": "zeitschleife",
+     "tier": 3,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "fused": [
+    "zeitschleife"
+   ]
+  },
+  {
+   "input": [
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": "silber"
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": "silber"
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": "silber"
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": "silber"
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 0,
+     "alloy": "rost"
+    },
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 0,
+     "alloy": "rost"
+    },
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "kleineGlocke",
+     "tier": 2,
+     "alloy": "glas"
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": "silber"
+    },
+    {
+     "id": "echo",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "kleineGlocke",
+     "tier": 2,
+     "alloy": "glas"
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": "silber"
+    },
+    {
+     "id": "echo",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "giftkueche",
+     "tier": 3,
+     "alloy": "gold"
+    },
+    {
+     "id": "echo",
+     "tier": 3,
+     "alloy": "quecksilber"
+    }
+   ],
+   "output": [
+    {
+     "id": "giftkueche",
+     "tier": 3,
+     "alloy": "gold"
+    },
+    {
+     "id": "echo",
+     "tier": 3,
+     "alloy": "quecksilber"
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "kleineGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "kleineGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "quecksilber",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": "rost"
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "quecksilber",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": "rost"
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": "silber"
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": "gold"
+    }
+   ],
+   "output": [
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": "silber"
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": "gold"
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "kleineGlocke",
+     "tier": 2,
+     "alloy": "gold"
+    },
+    {
+     "id": "zahnrad",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": "kupfer"
+    }
+   ],
+   "output": [
+    {
+     "id": "kleineGlocke",
+     "tier": 2,
+     "alloy": "gold"
+    },
+    {
+     "id": "zahnrad",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": "kupfer"
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": "rost"
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": "rost"
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "echo",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": "quecksilber"
+    }
+   ],
+   "output": [
+    {
+     "id": "echo",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": "quecksilber"
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "brennofen",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "brennofen",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": "glas"
+    },
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 2,
+     "alloy": "rost"
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": "glas"
+    },
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 2,
+     "alloy": "rost"
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": "rost"
+    },
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": "rost"
+    },
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 3,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "brennofen",
+     "tier": 0,
+     "alloy": "rost"
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": "glas"
+    }
+   ],
+   "output": [
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 3,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "brennofen",
+     "tier": 0,
+     "alloy": "rost"
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": "glas"
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "kleineGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "kleineGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": "silber"
+    },
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": "rost"
+    },
+    {
+     "id": "glockenseil",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": "silber"
+    },
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": "rost"
+    },
+    {
+     "id": "glockenseil",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "waffenkammer",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": "rost"
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 3,
+     "alloy": "gold"
+    },
+    {
+     "id": "echo",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "waffenkammer",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": "rost"
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 3,
+     "alloy": "gold"
+    },
+    {
+     "id": "echo",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": "glas"
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": "glas"
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 3,
+     "alloy": "gold"
+    },
+    {
+     "id": "brennofen",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": "glas"
+    },
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": "quecksilber"
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": "quecksilber"
+    }
+   ],
+   "output": [
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 3,
+     "alloy": "gold"
+    },
+    {
+     "id": "brennofen",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": "glas"
+    },
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": "quecksilber"
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": "quecksilber"
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "giftkueche",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 1,
+     "alloy": "gold"
+    },
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": "quecksilber"
+    },
+    {
+     "id": "glockenseil",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "giftkueche",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 1,
+     "alloy": "gold"
+    },
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": "quecksilber"
+    },
+    {
+     "id": "glockenseil",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "glockenseil",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 2,
+     "alloy": "silber"
+    }
+   ],
+   "output": [
+    {
+     "id": "glockenseil",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 2,
+     "alloy": "silber"
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": "rost"
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": "rost"
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "brennofen",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "brennofen",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 1,
+     "alloy": "glas"
+    },
+    {
+     "id": "echo",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 1,
+     "alloy": "glas"
+    },
+    {
+     "id": "echo",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "brennofen",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "brennofen",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "waffenkammer",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": "silber"
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "waffenkammer",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": "silber"
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "quecksilber",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "quecksilber",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "giftkueche",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": "glas"
+    },
+    {
+     "id": "glockenseil",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": "rost"
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "unruh",
+     "tier": 1,
+     "alloy": "glas"
+    },
+    {
+     "id": "glockenseil",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": "rost"
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 2,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "waffenkammer",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": "silber"
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "kleineGlocke",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": "silber"
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "glockenseil",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "kleineGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 1,
+     "alloy": "glas"
+    }
+   ],
+   "output": [
+    {
+     "id": "quecksilber",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "waffenkammer",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 1,
+     "alloy": "glas"
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 2,
+     "alloy": "rost"
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "brennofen",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 2,
+     "alloy": "rost"
+    },
+    {
+     "id": "brennofen",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "zahnrad",
+     "tier": 3,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": "gold"
+    },
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "feder",
+     "tier": 1,
+     "alloy": null
+    },
+    {
+     "id": "quecksilber",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "unruh",
+     "tier": 0,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 1,
+     "alloy": "gold"
+    },
+    {
+     "id": "zahnrad",
+     "tier": 1,
+     "alloy": "kupfer"
+    },
+    {
+     "id": "zahnrad",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  },
+  {
+   "input": [
+    {
+     "id": "zahnrad",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "output": [
+    {
+     "id": "zahnrad",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "feder",
+     "tier": 2,
+     "alloy": null
+    },
+    {
+     "id": "echo",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "grosseGlocke",
+     "tier": 3,
+     "alloy": null
+    },
+    {
+     "id": "glockenseil",
+     "tier": 0,
+     "alloy": null
+    }
+   ],
+   "fused": []
+  }
+ ]
+}

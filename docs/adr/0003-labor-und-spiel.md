@@ -8,10 +8,10 @@ Balancing braucht tausende simulierte Runs. Derselbe Kampf-Workload braucht in G
 
 ## Entscheidung
 
-- Die Regeln existieren zweimal: im Labor (`lab/`, JavaScript, später TypeScript) und im Spiel (`game/core/`, GDScript).
+- Die Regeln existieren zweimal: im Labor (`lab/`, TypeScript) und im Spiel (`game/core/`, GDScript).
 - Das Labor ist die Referenz. Regeln entstehen dort, werden getestet, gemessen und dann portiert.
 - Golden-Vektoren in `tests/golden/` sind der Vertrag. Das Labor erzeugt sie, das Spiel muss sie exakt treffen. Die CI prüft beides: Vektoren aktuell und Godot-Tests grün.
-- Ab M1 sind Inhalte gemeinsame Daten, damit nur der Regel-Interpreter doppelt existiert.
+- Inhalte sind gemeinsame Daten, nur der Regel-Interpreter existiert doppelt (ADR 0006).
 - Kommazahlen stehen in den Vektoren als exakte Ganzzahlen. Godots JSON-Parser liest Dezimalbrüche in den letzten Bits anders als JavaScript (gemessen beim RNG-Port).
 
 Vom Nutzer entschieden über das Cockpit am 06.11.2026.

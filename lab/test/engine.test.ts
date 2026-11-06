@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fight, CONFIG } from '../src/engine/combat.js';
-import { applyFusions } from '../src/engine/tower.js';
-import { playRun } from '../src/run/run.js';
-import { makeBots } from '../src/run/bots.js';
+import { fight, CONFIG } from '../src/engine/combat.ts';
+import { applyFusions } from '../src/engine/tower.ts';
+import { playRun } from '../src/run/run.ts';
+import { makeBots } from '../src/run/bots.ts';
 
 const tower = (...ids) => ({ maxFloors: 8, rooms: ids.map((id) => (typeof id === 'string' ? { id, tier: 0 } : id)) });
 const dummy = tower('bollwerk'); // greift nicht an
@@ -30,8 +30,8 @@ test('Verschmelzung: Brennofen unter Giftküche wird zur Höllenküche', () => {
 
 test('Kleine Glocke schlägt jede zweite Auslösung', () => {
   const res = fight(tower('kleineGlocke'), 9999, dummy, 9999, { record: true });
-  const fires = res.frames.flatMap((f) => f.events).filter((e) => e.side === 'a' && e.type === 'fire').length;
-  const strikes = res.frames.flatMap((f) => f.events).filter((e) => e.side === 'a' && e.type === 'strike').length;
+  const fires = res.frames!.flatMap((f) => f.events).filter((e) => e.side === 'a' && e.type === 'fire').length;
+  const strikes = res.frames!.flatMap((f) => f.events).filter((e) => e.side === 'a' && e.type === 'strike').length;
   assert.equal(strikes, Math.floor(fires / 2));
 });
 
@@ -62,8 +62,8 @@ test('Ein ganzer Run ist mit gleichem Seed reproduzierbar', () => {
 
 test('Echo-Räume wiederholen keine anderen Echo-Räume (keine exponentiellen Ketten)', () => {
   const res = fight(tower('feder', 'zeitschleife', 'zeitschleife', 'zeitschleife'), 99999, dummy, 99999, { record: true });
-  const first = res.frames.find((f) => f.events.some((e) => e.side === 'a' && e.idx === 3 && e.type === 'fire'));
-  const federFires = first.events.filter((e) => e.side === 'a' && e.idx === 0 && e.type === 'fire').length;
+  const first = res.frames!.find((f) => f.events.some((e) => e.side === 'a' && e.idx === 3 && e.type === 'fire'));
+  const federFires = first!.events.filter((e) => e.side === 'a' && e.idx === 0 && e.type === 'fire').length;
   assert.ok(federFires <= 2, `Feder feuerte ${federFires}× durch eine Zeitschleife`);
 });
 

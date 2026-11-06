@@ -12,8 +12,9 @@ Sequenzieller Auto Battler fürs Handy im Hochformat. Ein Funke läuft durch den
 
 | Ordner | Inhalt |
 |---|---|
-| `lab/` | Labor in JavaScript: Kampf-Engine, Run-Logik, Bots, Simulation, Browser-Viewer. Die Referenz für alle Regeln. |
+| `lab/` | Labor in TypeScript: Kampf-Engine, Run-Logik, Bots, Simulation, Browser-Viewer. Die Referenz für alle Regeln. |
 | `game/` | Godot-4.7-Projekt. `game/core/` ist der Port der Regeln, `game/scenes/` und `game/scripts/` die Oberfläche. |
+| `game/data/content.json` | Alle Räume, Verschmelzungen und Legierungen. Labor und Spiel lesen diese Datei (ADR 0006, `docs/content-format.md`). |
 | `tests/golden/` | Golden-Vektoren aus dem Labor. Das Spiel muss sie exakt treffen. |
 | `deploy/` | Container und Caddyfile für den vServer. |
 | `scripts/` | Godot-Installation, Web-Build, Hooks. |
@@ -21,10 +22,13 @@ Sequenzieller Auto Battler fürs Handy im Hochformat. Ein Funke läuft durch den
 ## Befehle
 
 ```sh
+cd lab && npm ci                    # einmalig: TypeScript für die Typprüfung
 cd lab && npm test                  # Labor-Tests
+cd lab && npm run typecheck         # Typprüfung mit tsc
 cd lab && npm run golden            # Golden-Vektoren neu erzeugen
 cd lab && npm run sim:smoke         # schnelle Simulation mit Blowout- und Determinismus-Prüfung
 cd lab && npm run sim -- --runs 300 # volle Simulation, Bericht in lab/sim/output/report.md
+cd lab && npm run viewer            # Labor-Viewer: http://localhost:5173/lab/viewer/
 ./scripts/install-godot.sh          # Godot 4.7.2 nach ~/.local/bin/godot
 godot --headless --path game --script res://tests/run_tests.gd   # Godot-Tests
 ./scripts/build-web.sh              # Web-Export nach build/web/
@@ -36,6 +40,8 @@ godot --headless --path game --script res://tests/run_tests.gd   # Godot-Tests
 - Alles in der Spiellogik ist deterministisch. Zufall nur über den seedbaren RNG (`lab/src/rng.js`, `game/core/rng.gd`). Keine Systemzeit, kein `Math.random`, kein `randi()`.
 - Keine Rechenoperationen, die zwischen JavaScript und GDScript abweichen können: keine Potenzen, Logarithmen oder Exponentialfunktionen in der Spiellogik. Kurven als Tabellen.
 - Golden-Vektoren speichern Kommazahlen als exakte Ganzzahlen, weil JSON-Parser die letzten Bits unterschiedlich lesen.
+- Gleitkomma-Ausdrücke haben in Labor und Port dieselbe Reihenfolge der Operationen. Runden immer mit `floor(x + 0.5)`.
+- Neue Räume aus bekannten Bausteinen sind reine Datenänderungen. Neue Ops oder Terme ändern beide Interpreter und brauchen einen Golden-Fall.
 - `game/core/` kennt keine Nodes und keine Zeit. Die Oberfläche zeigt an und leitet Eingaben weiter, sie rechnet keine Regeln.
 - Nichts darf den Web-Export brechen: keine Threads, keine GDExtensions, kein C# (ADR 0002).
 - Jede Mechanik wird in der Simulation gemessen, bevor sie in die Oberfläche kommt.

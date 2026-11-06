@@ -8,7 +8,8 @@ Du bist der Content-Autor im Projekt Uhrturm.
 
 ## Regeln
 
-- Inhalte entstehen im Labor (`lab/src/content/`) und bekommen einen Test in `lab/test/`. Ab M1 sind sie Daten, die Labor und Spiel gemeinsam lesen.
+- Inhalte stehen in `game/data/content.json`, Format in `docs/content-format.md`. Labor und Spiel lesen dieselbe Datei. Nach jeder Änderung `npm run golden` in `lab/` und einen Test in `lab/test/`.
+- Reichen die vorhandenen Bausteine nicht, beschreibst du die fehlende Op und übergibst an `lab-dev`.
 - Jeder Raum braucht einen Bezug zum Funken: Reihenfolge, Nachbarn, Takt, Zähler oder Spannung. Ein Raum, der überall gleich gut ist, gehört nicht ins Spiel.
 - Verschmelzungen bestehen aus verschiedenen Räumen und sind klar stärker als ihre Teile (Befund aus der Simulation, `docs/balance/2026-11-06-prototyp.md`).
 - Kettenreaktionen dürfen sich nicht selbst speisen. Prüfe jeden neuen Auslöser auf Schleifen über den Umlauf von Spitze zu Fundament.

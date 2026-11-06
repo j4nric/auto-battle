@@ -14,8 +14,8 @@ Ein Funke läuft durch deinen Turm und löst Raum für Raum aus. Der Build ist d
 
 | Ordner | Inhalt |
 |---|---|
-| `lab/` | Labor in JavaScript: Regeln, Bots, Simulation, Browser-Viewer. Referenz für alle Regeln. |
-| `game/` | Godot-4.7-Projekt, das eigentliche Spiel |
+| `lab/` | Labor in TypeScript: Regeln, Bots, Simulation, Browser-Viewer. Referenz für alle Regeln. |
+| `game/` | Godot-4.7-Projekt, das eigentliche Spiel. Inhalte in `game/data/content.json` |
 | `tests/golden/` | Golden-Vektoren, die Labor und Spiel verbinden |
 | `deploy/` | Container und Caddyfile für den vServer |
 | `scripts/` | Godot-Installation, Web-Build, Hooks |
@@ -23,11 +23,11 @@ Ein Funke läuft durch deinen Turm und löst Raum für Raum aus. Der Build ist d
 ## Befehle
 
 ```bash
-cd lab && npm test && npm run sim:smoke          # Labor
+cd lab && npm ci && npm test && npm run sim:smoke # Labor
 ./scripts/install-godot.sh                        # Godot 4.7.2 nach ~/.local/bin
 godot --headless --path game --script res://tests/run_tests.gd
 ./scripts/build-web.sh                            # Web-Export nach build/web
-cd lab && npm run viewer                          # Prototyp-Viewer: http://localhost:5173/viewer/
+cd lab && npm run viewer                          # Labor-Viewer: http://localhost:5173/lab/viewer/
 ```
 
 ![Startbildschirm M0](docs/img/m0-start.png)
