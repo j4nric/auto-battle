@@ -5,7 +5,8 @@ import { Rng, hashSeed } from '../src/rng.ts';
 import { ROOMS, ALLOY_IDS } from '../src/content.ts';
 import { fight, type Tower } from '../src/engine/combat.ts';
 import { applyFusions, BASE_FLOORS } from '../src/engine/tower.ts';
-import { HP_TABLE } from '../src/run/run.ts';
+import { HP_TABLE, createRun, act, playRun, type Run, type Action } from '../src/run/run.ts';
+import { TinkerBot } from '../src/run/bots.ts';
 
 const out = new URL('../../tests/golden/', import.meta.url);
 mkdirSync(out, { recursive: true });
@@ -124,4 +125,68 @@ console.log(`tests/golden/combat.json: ${fights.length} fights`);
   });
   write('fusions.json', { generator: 'lab/tools/golden.ts', fusions });
   console.log(`tests/golden/fusions.json: ${fusions.length} cases`);
+}
+
+// ------------------------------------------------------------------ runs
+// A run is seed + actions. The port replays the actions and must reach the same state after
+// every single action.
+{
+  const digest = (r: Run) => ({
+    phase: r.phase, hour: r.hour, gold: r.gold, lives: r.lives, wins: r.wins,
+    rerollCost: r.rerollCost, merchant: r.merchant,
+    tower: r.tower.rooms.map((x) => [x.id, x.tier ?? 0, x.alloy ?? null]),
+    offers: r.offers.map((o) => [o.id, o.tier, o.price]),
+    omens: r.omens.map((o) => o.id),
+    pendingAlloy: r.pendingAlloy,
+    fusions: [...r.fusionsFound],
+    fights: r.fights.map((f) => (f.skipped ? [f.omen] : [f.omen, f.opponent, f.won ? 1 : 0, f.ticks])),
+    midnight: r.midnight,
+  });
+
+  /** A chaotic player with its own randomness: buys, sells, moves, rerolls, picks anything. */
+  function chaosRun(seed: number): Run {
+    const run = createRun(seed);
+    const prng = new Rng(hashSeed('golden-player', seed));
+    const options = (): Action[] => {
+      const n = run.tower.rooms.length;
+      if (run.phase === 'omen') return run.omens.map((o) => ({ t: 'omen', id: o.id }));
+      if (run.phase === 'alloy') return Array.from({ length: n }, (_, idx) => ({ t: 'alloy', idx }));
+      const list: Action[] = [];
+      run.offers.forEach((_, offer) => {
+        list.push({ t: 'buy', offer, pos: prng.int(n + 1), upgrade: prng.chance(0.5) });
+        list.push({ t: 'buy', offer, pos: prng.int(n + 1), upgrade: false });
+      });
+      if (n && prng.chance(0.25)) list.push({ t: 'sell', idx: prng.int(n) });
+      if (n > 1 && prng.chance(0.4)) list.push({ t: 'move', from: prng.int(n), to: prng.int(n) });
+      if (prng.chance(0.3)) list.push({ t: 'reroll' });
+      return list;
+    };
+    for (let guard = 0; guard < 400 && run.phase !== 'over'; guard++) {
+      if (run.phase === 'shop' && (prng.chance(0.25) || guard % 9 === 8)) {
+        act(run, { t: 'endShop' });
+        continue;
+      }
+      const list = options();
+      if (list.length) act(run, prng.pick(list));
+      else if (run.phase === 'shop') act(run, { t: 'endShop' });
+    }
+    return run;
+  }
+
+  const finished: Array<{ seed: number; run: Run; kind: string }> = [];
+  for (let k = 0; k < 10; k++) finished.push({ seed: 1000 + k, run: chaosRun(1000 + k), kind: 'chaos' });
+  for (const seed of [7, 42]) finished.push({ seed, run: playRun(seed, new TinkerBot()), kind: 'tinkerer' });
+
+  const runs = finished.map(({ seed, run, kind }) => {
+    // Replay step by step to record the state after each action.
+    const r = createRun(seed);
+    const states = [digest(r)];
+    for (const a of run.actions) {
+      if (!act(r, a)) throw new Error(`golden replay rejected ${JSON.stringify(a)}`);
+      states.push(digest(r));
+    }
+    return { seed, kind, actions: run.actions, states };
+  });
+  write('runs.json', { generator: 'lab/tools/golden.ts', runs });
+  console.log(`tests/golden/runs.json: ${runs.length} runs, ${runs.reduce((s, r) => s + r.actions.length, 0)} actions`);
 }

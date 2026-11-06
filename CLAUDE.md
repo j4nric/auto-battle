@@ -42,6 +42,7 @@ godot --headless --path game --script res://tests/run_tests.gd   # Godot-Tests
 - Golden-Vektoren speichern Kommazahlen als exakte Ganzzahlen, weil JSON-Parser die letzten Bits unterschiedlich lesen.
 - Gleitkomma-Ausdrücke haben in Labor und Port dieselbe Reihenfolge der Operationen. Runden immer mit `floor(x + 0.5)`.
 - Neue Räume aus bekannten Bausteinen sind reine Datenänderungen. Neue Ops oder Terme ändern beide Interpreter und brauchen einen Golden-Fall.
+- Ein Run ist Seed plus Aktionsfolge (ADR 0007). Spieler, Bots und Oberfläche ändern ihn nur über `act()` und ziehen nie Zufall aus `run.rng`.
 - `game/core/` kennt keine Nodes und keine Zeit. Die Oberfläche zeigt an und leitet Eingaben weiter, sie rechnet keine Regeln.
 - Nichts darf den Web-Export brechen: keine Threads, keine GDExtensions, kein C# (ADR 0002).
 - Jede Mechanik wird in der Simulation gemessen, bevor sie in die Oberfläche kommt.

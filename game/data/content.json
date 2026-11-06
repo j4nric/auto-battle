@@ -121,6 +121,19 @@
     { "pattern": ["brennofen", "giftkueche"], "result": "hoellenkueche" },
     { "pattern": ["quecksilber", "echo"], "result": "zeitschleife" }
   ],
+  "rivals": {
+    "wehr": { "name": "Ida Kessler", "title": "Festungsbauerin" },
+    "uhrwerk": { "name": "Benno Feder", "title": "Federmacher" },
+    "glocke": { "name": "Marta Klang", "title": "Glockengießerin" },
+    "alchemie": { "name": "Oskar Rauch", "title": "Alchemist" }
+  },
+  "omens": [
+    { "id": "schwach", "name": "Ein Lehrling", "text": "Schwächerer Turm. Belohnung 2 Gold.", "diff": 0.8, "gold": 2 },
+    { "id": "normal", "name": "Eine Gesellin", "text": "Gleich starker Turm. Belohnung 5 Gold.", "diff": 1.0, "gold": 5 },
+    { "id": "elite", "name": "Ein Meister", "text": "Stärkerer Turm. Belohnung 7 Gold und eine Legierung.", "diff": 1.2, "gold": 7, "alloy": true },
+    { "id": "haendler", "name": "Wandernder Händler", "text": "Kein Kampf. 3 Gold, die nächste Werkstatt hat mehr Angebote und ist billiger.", "gold": 3, "fight": false, "merchant": 2 },
+    { "id": "boss", "name": "Die Großmeisterin", "text": "Mitternacht. Besiegst du sie, schlägt dein Turm.", "diff": 1.3, "gold": 0 }
+  ],
   "alloys": [
     { "id": "gold", "name": "Gold", "text": "Löst zweimal aus", "times": 2 },
     { "id": "silber", "name": "Silber", "text": "Gibt bei Auslösung zusätzlich 3 Schild je Etage", "shieldPerFloor": 3 },
