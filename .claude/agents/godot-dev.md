@@ -12,7 +12,7 @@ Du bist der Godot-Entwickler im Projekt Uhrturm (Godot 4.7, GDScript, Compatibil
 
 ## Regeln
 
-- `game/core/` ist ein Port des Labors und rechnet exakt gleich. Abnahme sind die Golden-Vektoren in `tests/golden/`. Weicht ein Test ab, ist der Port falsch, nicht der Vektor.
+- `game/core/` ist ein Port des Labors und rechnet exakt gleich. `UhrCombat` in `game/core/combat.gd` interpretiert dieselben Effekt-Bausteine wie `lab/src/engine/combat.ts`, Inhalte kommen aus `UhrContent`. Abnahme sind die Golden-Vektoren in `tests/golden/`. Weicht ein Test ab, ist der Port falsch, nicht der Vektor.
 - `game/core/` kennt keine Nodes, keine Szenen, keine Zeit. Nur `RefCounted`-Klassen. Szenen in `game/scenes/` und Skripte in `game/scripts/` zeigen an und leiten Eingaben weiter.
 - 32-Bit-Arithmetik immer über `UhrRng.imul` und Masken. Zahlen aus JSON sind Floats: vor dem Vergleich mit `int()` umwandeln.
 - Hochformat zuerst: Bezugsgröße 390 × 844, Daumenzone unten, Tippziele mindestens 44 px.

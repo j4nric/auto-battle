@@ -21,7 +21,7 @@ root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 
 fail() { echo "commit blocked (checked in $root): $1" >&2; exit 2; }
 
-(cd "$root/lab" && node --test >/tmp/lab-test.log 2>&1) \
+(cd "$root/lab" && npm test --silent >/tmp/lab-test.log 2>&1) \
   || fail "lab tests failed:
 $(tail -n 30 /tmp/lab-test.log)"
 

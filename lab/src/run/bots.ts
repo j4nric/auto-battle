@@ -1,24 +1,26 @@
-// Bots, die den Prototyp spielen. Der "Tüftler" bewertet Kandidaten, indem er Testkämpfe gegen
-// Referenz-Monster der aktuellen Stunde simuliert (ohne den echten Gegner zu kennen).
-import { hashSeed } from '../rng.js';
-import { fight, margin } from '../engine/combat.js';
-import { FUSIONS } from '../content/rooms.js';
-import * as T from '../engine/tower.js';
-import * as R from './run.js';
+// Bots that play the prototype. The "tinkerer" rates candidates by simulating test fights against
+// reference monsters of the current hour (without knowing the real opponent).
+import { hashSeed } from '../rng.ts';
+import { fight, margin } from '../engine/combat.ts';
+import { FUSIONS } from '../content.ts';
+import * as T from '../engine/tower.ts';
+import * as R from './run.ts';
 
 const BENCH = 3;
-const benchCache = new Map();
-function benchmarks(seed, hour) {
+const benchCache = new Map<string, R.Opponent[]>();
+function benchmarks(seed: number, hour: number): R.Opponent[] {
   const key = `${seed}:${hour}`;
-  if (!benchCache.has(key)) {
+  let list = benchCache.get(key);
+  if (!list) {
     if (benchCache.size > 5000) benchCache.clear();
-    benchCache.set(key, Array.from({ length: BENCH }, (_, k) => R.generateMonster(hashSeed('bench', seed, k), hour, 1)));
+    list = Array.from({ length: BENCH }, (_, k) => R.generateMonster(hashSeed('bench', seed, k), hour, 1));
+    benchCache.set(key, list);
   }
-  return benchCache.get(key);
+  return list;
 }
 
-/** Mittlere Kampfbilanz eines Turms gegen Referenz-Monster der Stunde. */
-export function score(run, tower, hour = run.hour) {
+/** Mean fight balance of a tower against the hour's reference monsters. */
+export function score(run: { seed: number; hour: number }, tower: T.Tower, hour = run.hour): number {
   const t = T.applyFusions(tower).tower;
   const hp = R.playerHp(hour);
   let s = 0;
@@ -26,41 +28,62 @@ export function score(run, tower, hour = run.hour) {
   return s / BENCH;
 }
 
-export class RandomBot {
-  constructor() {
-    this.name = 'zufall';
-    this.contributesGhosts = false;
-  }
+export class RandomBot implements R.Bot {
+  name = 'zufall';
+  contributesGhosts = false;
 
-  shop(run) {
+  shop(run: R.Run): void {
     for (let guard = 0; guard < 10; guard++) {
-      const options = run.offers.map((o, i) => i).filter((i) => run.offers[i].price <= run.gold);
+      const options = run.offers.map((_, i) => i).filter((i) => run.offers[i].price <= run.gold);
       if (!options.length) break;
       const i = run.rng.pick(options);
       if (!R.buy(run, i, run.rng.int(run.tower.rooms.length + 1), run.rng.chance(0.7))) run.offers.splice(i, 1);
     }
   }
 
-  chooseOmen(run, omens) {
+  chooseOmen(run: R.Run, omens: R.Omen[]): R.Omen {
     return run.rng.pick(omens);
   }
 }
 
-export class TinkerBot {
-  /**
-   * @param {object} o
-   * @param {string} o.name
-   * @param {number} [o.maxFloors] begrenzt die Turmhöhe (Tempo-Experiment)
-   * @param {boolean} [o.reorder] optimiert die Reihenfolge der Räume
-   * @param {boolean} [o.placeTop] setzt neue Räume immer oben drauf statt die beste Position zu suchen
-   */
-  constructor({ name = 'tüftler', maxFloors = null, reorder = true, placeTop = false, knowsRecipes = false } = {}) {
-    Object.assign(this, { name, maxFloors, reorder, placeTop, knowsRecipes });
-    this.contributesGhosts = true;
+export interface TinkerOptions {
+  name?: string;
+  /** Caps the tower height (tempo experiment). */
+  maxFloors?: number | null;
+  /** Optimises the order of rooms after shopping. */
+  reorder?: boolean;
+  /** Always places new rooms on top instead of searching the best position. */
+  placeTop?: boolean;
+  /** Knows the fusion recipes and builds towards them. */
+  knowsRecipes?: boolean;
+}
+
+interface Candidate {
+  i: number;
+  pos: number;
+  upgrade?: boolean;
+  sell?: number;
+  tower: T.FullTower;
+}
+
+export class TinkerBot implements R.Bot {
+  name: string;
+  maxFloors: number | null;
+  reorder: boolean;
+  placeTop: boolean;
+  knowsRecipes: boolean;
+  contributesGhosts = true;
+
+  constructor({ name = 'tüftler', maxFloors = null, reorder = true, placeTop = false, knowsRecipes = false }: TinkerOptions = {}) {
+    this.name = name;
+    this.maxFloors = maxFloors;
+    this.reorder = reorder;
+    this.placeTop = placeTop;
+    this.knowsRecipes = knowsRecipes;
   }
 
-  // Wer den Kodex kennt, bewertet angefangene Rezepte (z. B. zwei Glocken übereinander) als Vorfreude.
-  evaluate(run, tower, hour) {
+  /** Whoever knows the codex values started recipes (e.g. two bells in a row) as anticipation. */
+  evaluate(run: R.Run, tower: T.Tower, hour?: number): number {
     const s = score(run, tower, hour);
     if (!this.knowsRecipes) return s;
     let bonus = 0;
@@ -77,8 +100,8 @@ export class TinkerBot {
     return s + bonus;
   }
 
-  candidates(run) {
-    const out = [];
+  candidates(run: R.Run): Candidate[] {
+    const out: Candidate[] = [];
     const cap = this.maxFloors ?? run.tower.maxFloors;
     run.offers.forEach((o, i) => {
       if (o.price > run.gold) return;
@@ -93,9 +116,9 @@ export class TinkerBot {
         const t = R.previewBuy(run, i, pos, false);
         if (t && T.floorsUsed(t) <= cap) out.push({ i, pos, upgrade: false, tower: t });
       }
-      // Turm voll: Ersetzen eines bestehenden Raums prüfen.
+      // Tower full: consider replacing an existing room.
       if (!T.fits({ ...run.tower, maxFloors: cap }, o.id)) {
-        run.tower.rooms.forEach((r, j) => {
+        run.tower.rooms.forEach((_, j) => {
           const removed = T.remove(run.tower, j);
           if (!T.fits({ ...removed, maxFloors: cap }, o.id)) return;
           const t = T.insert(removed, { id: o.id, tier: o.tier, alloy: null }, j);
@@ -106,10 +129,10 @@ export class TinkerBot {
     return out;
   }
 
-  shop(run) {
+  shop(run: R.Run): void {
     let current = this.evaluate(run, run.tower);
     for (let guard = 0; guard < 12; guard++) {
-      let best = null;
+      let best: (Candidate & { gain: number }) | null = null;
       for (const c of this.candidates(run)) {
         const gain = this.evaluate(run, c.tower) - current;
         if (gain > 0.02 && (!best || gain > best.gain)) best = { ...c, gain };
@@ -134,12 +157,12 @@ export class TinkerBot {
     if (this.reorder) this.optimizeOrder(run);
   }
 
-  optimizeOrder(run) {
+  optimizeOrder(run: R.Run): void {
     let tower = run.tower;
     let cur = this.evaluate(run, tower);
-    // Hill-Climbing: einen Raum an eine andere Stelle verschieben, solange es besser wird.
+    // Hill climbing: move one room to another position as long as that improves the tower.
     for (let step = 0; step < 12; step++) {
-      let best = null;
+      let best: { t: T.FullTower; s: number } | null = null;
       for (let i = 0; i < tower.rooms.length; i++) {
         for (let j = 0; j < tower.rooms.length; j++) {
           if (i === j) continue;
@@ -155,20 +178,20 @@ export class TinkerBot {
     R.setTower(run, tower);
   }
 
-  chooseOmen(run, omens) {
+  chooseOmen(run: R.Run, omens: R.Omen[]): R.Omen {
     if (omens.length === 1) return omens[0];
     const strength = this.evaluate(run, run.tower, run.hour + 1);
-    const by = (id) => omens.find((o) => o.id === id);
-    if (strength > 0.6 && by('elite')) return by('elite');
-    if (strength < 0.15 && by('schwach')) return by('schwach');
-    if (strength < 0.15 && by('haendler')) return by('haendler');
+    const by = (id: string) => omens.find((o) => o.id === id);
+    if (strength > 0.6 && by('elite')) return by('elite')!;
+    if (strength < 0.15 && by('schwach')) return by('schwach')!;
+    if (strength < 0.15 && by('haendler')) return by('haendler')!;
     return by('normal') ?? by('schwach') ?? omens[0];
   }
 
-  chooseAlloyTarget(run, alloy) {
+  chooseAlloyTarget(run: R.Run, alloy: string): number {
     let best = 0;
     let bestS = -Infinity;
-    run.tower.rooms.forEach((r, i) => {
+    run.tower.rooms.forEach((_, i) => {
       const s = this.evaluate(run, T.setRoom(run.tower, i, { alloy }));
       if (s > bestS) [best, bestS] = [i, s];
     });
@@ -176,7 +199,7 @@ export class TinkerBot {
   }
 }
 
-export function makeBots() {
+export function makeBots(): Record<string, () => R.Bot> {
   return {
     zufall: () => new RandomBot(),
     'tüftler': () => new TinkerBot({ name: 'tüftler' }),
