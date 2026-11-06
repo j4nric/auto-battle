@@ -1,0 +1,15 @@
+# Internal static file server. HTTPS is handled by the household app's Caddy in front of
+# this container, so this one only speaks plain HTTP on :80.
+:80 {
+	root * /srv
+	encode zstd gzip
+	file_server
+
+	# Godot exports fixed file names (index.wasm, index.pck, index.js), so nothing may be
+	# cached blindly: browsers revalidate with the ETag and only download changed files.
+	header Cache-Control "no-cache"
+
+	# Explicit type so WebAssembly.instantiateStreaming never depends on the MIME table.
+	@wasm path *.wasm
+	header @wasm Content-Type application/wasm
+}

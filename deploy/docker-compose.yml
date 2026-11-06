@@ -1,0 +1,25 @@
+# Runs on the vServer in $DEPLOY_PATH (/opt/uhrturm). The deploy job syncs ./site, this
+# file and the Caddyfile there and runs `docker compose up -d`.
+#
+# Ports 80/443 belong to the Caddy of the household app (repo j4nric/haushalt-app,
+# infra/production). That Caddy terminates HTTPS for uhrturm-62-83-23-90.sslip.io and
+# forwards through the shared network `uhrturm-proxy` to the alias `uhrturm-web`.
+# This container publishes no ports. See docs/adr/0004.
+
+name: uhrturm
+
+services:
+  web:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    volumes:
+      - ./site:/srv:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    networks:
+      proxy:
+        aliases: [uhrturm-web]
+
+networks:
+  proxy:
+    name: uhrturm-proxy
+    external: true

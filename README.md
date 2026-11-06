@@ -1,35 +1,33 @@
-# Uhrturm (Arbeitstitel)
+# Uhrturm
 
-Sequenzieller Auto Battler für Smartphones im Hochkantformat, inspiriert von The Bazaar und Loop Hero.
+Sequenzieller Auto Battler fürs Handy im Hochformat, inspiriert von The Bazaar und Loop Hero.
 Ein Funke läuft durch deinen Turm und löst Raum für Raum aus. Der Build ist der Loop.
 
-- Konzept: [docs/konzept-brainstorm.md](docs/konzept-brainstorm.md)
-- Befunde aus dem Prototyp: [docs/prototyp-befunde.md](docs/prototyp-befunde.md)
-- Letzter Simulationsbericht: [sim/output/report.md](sim/output/report.md)
+**Spielen:** https://uhrturm-62-83-23-90.sslip.io
 
-## Prototyp
-
-Reines JavaScript (ES-Module), keine Abhängigkeiten, Node 20 oder neuer.
-
-```bash
-npm test                         # Kernmechaniken prüfen
-npm run sim                      # 200 Runs pro Bot simulieren, Bericht nach sim/output/report.md
-node sim/simulate.js --runs 300  # mehr Runs
-npm run viewer                   # http://localhost:5173/viewer/ (auch im Handy-Browser im selben Netz)
-```
-
-Der Viewer spielt einen Bot-Run Stunde für Stunde ab. `?seed=777` in der URL wählt einen festen Run.
-
-![Kampf im Viewer](docs/img/viewer-kampf.png)
+- Design: [docs/DESIGN.md](docs/DESIGN.md)
+- Entscheidungen: [docs/adr/](docs/adr/README.md)
+- Messungen: [docs/balance/](docs/balance/2026-11-06-prototyp.md)
+- Arbeitsweise für Claude: [CLAUDE.md](CLAUDE.md)
 
 ## Aufbau
 
-| Pfad | Inhalt |
+| Ordner | Inhalt |
 |---|---|
-| `src/rng.js` | Seedbarer Zufall |
-| `src/content/` | Räume, Verschmelzungen, Legierungen |
-| `src/engine/` | Kampf-Engine und Turm-Operationen |
-| `src/run/` | Run-Loop (Werkstatt, Vorzeichen, Gegner) und Bots |
-| `sim/` | Simulation, Bericht, Static-Server für den Viewer |
-| `viewer/` | Hochkant-Ansicht im Browser |
-| `test/` | Tests mit `node:test` |
+| `lab/` | Labor in JavaScript: Regeln, Bots, Simulation, Browser-Viewer. Referenz für alle Regeln. |
+| `game/` | Godot-4.7-Projekt, das eigentliche Spiel |
+| `tests/golden/` | Golden-Vektoren, die Labor und Spiel verbinden |
+| `deploy/` | Container und Caddyfile für den vServer |
+| `scripts/` | Godot-Installation, Web-Build, Hooks |
+
+## Befehle
+
+```bash
+cd lab && npm test && npm run sim:smoke          # Labor
+./scripts/install-godot.sh                        # Godot 4.7.2 nach ~/.local/bin
+godot --headless --path game --script res://tests/run_tests.gd
+./scripts/build-web.sh                            # Web-Export nach build/web
+cd lab && npm run viewer                          # Prototyp-Viewer: http://localhost:5173/viewer/
+```
+
+![Startbildschirm M0](docs/img/m0-start.png)
