@@ -68,6 +68,7 @@ Der Nutzer verfolgt die Entwicklung mobil über das Cockpit: https://claude.ai/a
 Es ist eine Seite mit Datenbank (`ArtifactData`). Pflicht nach jedem Arbeitsschritt:
 
 - **Zu Beginn jeder Session**: `questions` mit `status == answered` und `claudeAck != true` lesen, umsetzen, dann `claudeAck: true` setzen. Ebenso `ideas` mit neuer `vote` und `claudeAck == false`.
+- **Spieltest-Notizen**: `playtests` mit `claudeAck != true` lesen (`ts`, `text`, `build`). Daraus Aufgaben machen, dann `claudeAck: true` und eine kurze `reply` setzen. Ist es umgesetzt, `status: done` und die Antwort ergänzen.
 - **Läuft gerade**: `tasks` mit `title`, `status` (running | blocked | done), `startedAt`, `updatedAt`, `note`, `steps` (`label`, `done`) aktuell halten.
 - **Verlauf**: Eintrag in `log` (`ts`, `kind`: commit | pr | merge | deploy | decision | note, `title`, `body`, optional `url`). Ids sortierbar: `JJJJMMTT-HHMM-stichwort`.
 - **Meilensteine**: `milestones/M0..M8` mit `status` (done | active | planned) und kurzer `note`.

@@ -30,4 +30,4 @@ godot --headless --path game --script res://tests/run_tests.gd
 cd lab && npm run viewer                          # Labor-Viewer: http://localhost:5173/lab/viewer/
 ```
 
-![Startbildschirm M0](docs/img/m0-start.png)
+![Kampf auf dem Handy](docs/img/m2-kampf.png)
