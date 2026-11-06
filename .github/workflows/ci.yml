@@ -127,3 +127,18 @@ jobs:
             docker compose exec -T web caddy reload --config /etc/caddy/Caddyfile
             docker compose ps
           "
+      - name: Check public address
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          url="https://uhrturm-62-83-23-90.sslip.io"
+          for i in $(seq 1 12); do
+            page=$(curl -s -o /dev/null -w '%{http_code}' "$url/" || true)
+            wasm=$(curl -s -o /dev/null -w '%{http_code} %{content_type}' "$url/index.wasm" || true)
+            echo "attempt $i: page $page, wasm $wasm"
+            if [ "$page" = "200" ] && [ "${wasm%% *}" = "200" ]; then
+              echo "Public address serves the game: $url"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::warning::$url does not serve the game yet (page $page, wasm $wasm). Is the block in the household Caddy deployed?"
