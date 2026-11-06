@@ -214,7 +214,8 @@ export function generateMonster(seed: number, hour: number, diff = 1): Opponent 
   const all = SHOP_ROOMS;
   const target = Math.min(T.BASE_FLOORS, 2 + hour);
   let tower = T.emptyTower();
-  const base = (hour - 1) / 3;
+  // Rivals gain tiers quickly so hours 2 to 4 are a real test (M4: 84-90 % wins before).
+  const base = (hour - 1) / 1.25;
   for (let tries = 0; tries < 40 && T.floorsUsed(tower) < target; tries++) {
     const def = rng.chance(0.6) ? rng.pick(pool) : rng.pick(all);
     if (T.floorsUsed(tower) + def.height > target) continue;
