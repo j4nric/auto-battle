@@ -75,6 +75,7 @@ Es ist eine Seite mit Datenbank (`ArtifactData`). Pflicht nach jedem Arbeitsschr
 - **Verlauf**: Eintrag in `log` (`ts`, `kind`: commit | pr | merge | deploy | decision | note, `title`, `body`, optional `url`). Ids sortierbar: `JJJJMMTT-HHMM-stichwort`.
 - **Meilensteine**: `milestones/M0..M8` mit `status` (done | active | planned) und kurzer `note`.
 - **Fragen**: Entscheidungen des Nutzers als Dokument in `questions` (`order`, `area`, `title`, `context`, `recommendation`, `options`, `status: open`). Nicht im Chat fragen, wenn es im Cockpit beantwortet werden kann.
+- **Raum-Wiki**: Nach jeder Änderung an `content.json` `node lab/tools/wiki.ts` laufen lassen und die Dateien aus `lab/sim/output/wiki/rooms/` in `rooms` schreiben. Notizen in `roomNotes` (`room`, `text`, `ts`) mit `claudeAck != true` wie Spieltest-Notizen behandeln.
 - **Simulation**: Jede aussagekräftige Messung als Dokument in `sims` (`ts`, `area`, `title`, `summary`, `columns`, `rows`, optional `note`, `cmd`, `url`). Zahlen als Text mit deutschem Komma.
 - **meta/project**: `branch`, `lastCommit`, `openPr`, `serverUrl`, `serverLive`, `build`, `updatedAt` nach jedem Merge und Deploy aktualisieren.
 - Agenten haben keinen Cockpit-Zugriff. Claude überträgt ihre Ergebnisse.
