@@ -68,6 +68,22 @@ export interface GuildDef {
   color: string;
 }
 
+export interface Omen {
+  id: string;
+  name: string;
+  text: string;
+  diff?: number;
+  gold: number;
+  alloy?: boolean;
+  fight?: boolean;
+  merchant?: number;
+}
+
+export interface Rival {
+  name: string;
+  title: string;
+}
+
 interface ContentFile {
   version: number;
   tiers: { mult: number[]; names: string[] };
@@ -75,6 +91,8 @@ interface ContentFile {
   rooms: RoomDef[];
   fusions: FusionDef[];
   alloys: AlloyDef[];
+  rivals: Record<string, Rival>;
+  omens: Omen[];
 }
 
 const content = data as unknown as ContentFile;
@@ -87,3 +105,5 @@ export const FUSIONS: readonly FusionDef[] = content.fusions;
 export const ALLOYS: Readonly<Record<string, AlloyDef>> = Object.fromEntries(content.alloys.map((a) => [a.id, a]));
 export const ALLOY_IDS: readonly string[] = content.alloys.map((a) => a.id);
 export const SHOP_ROOMS: readonly RoomDef[] = content.rooms.filter((r) => !r.fusion);
+export const RIVALS: Readonly<Record<string, Rival>> = content.rivals;
+export const OMENS: Readonly<Record<string, Omen>> = Object.fromEntries(content.omens.map((o) => [o.id, o]));

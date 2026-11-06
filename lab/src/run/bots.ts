@@ -1,6 +1,6 @@
 // Bots that play the prototype. The "tinkerer" rates candidates by simulating test fights against
 // reference monsters of the current hour (without knowing the real opponent).
-import { hashSeed } from '../rng.ts';
+import { hashSeed, Rng } from '../rng.ts';
 import { fight, margin } from '../engine/combat.ts';
 import { FUSIONS } from '../content.ts';
 import * as T from '../engine/tower.ts';
@@ -31,18 +31,38 @@ export function score(run: { seed: number; hour: number }, tower: T.Tower, hour 
 export class RandomBot implements R.Bot {
   name = 'zufall';
   contributesGhosts = false;
+  private run: R.Run | null = null;
+  private ownRng = new Rng(0);
+
+  /**
+   * The bot's own randomness. It must never draw from run.rng: those draws would not be part of
+   * the action list, and the run could no longer be replayed from seed + actions.
+   */
+  private rng(run: R.Run): Rng {
+    if (this.run !== run) {
+      this.run = run;
+      this.ownRng = new Rng(hashSeed('random-bot', run.seed));
+    }
+    return this.ownRng;
+  }
 
   shop(run: R.Run): void {
+    const rng = this.rng(run);
+    // Ten attempts; a rejected purchase (tower full, maxed tier) just uses up one attempt.
     for (let guard = 0; guard < 10; guard++) {
       const options = run.offers.map((_, i) => i).filter((i) => run.offers[i].price <= run.gold);
       if (!options.length) break;
-      const i = run.rng.pick(options);
-      if (!R.buy(run, i, run.rng.int(run.tower.rooms.length + 1), run.rng.chance(0.7))) run.offers.splice(i, 1);
+      const i = rng.pick(options);
+      R.act(run, { t: 'buy', offer: i, pos: rng.int(run.tower.rooms.length + 1), upgrade: rng.chance(0.7) });
     }
   }
 
   chooseOmen(run: R.Run, omens: R.Omen[]): R.Omen {
-    return run.rng.pick(omens);
+    return this.rng(run).pick(omens);
+  }
+
+  chooseAlloyTarget(run: R.Run): number {
+    return this.rng(run).int(run.tower.rooms.length);
   }
 }
 
@@ -138,18 +158,13 @@ export class TinkerBot implements R.Bot {
         if (gain > 0.02 && (!best || gain > best.gain)) best = { ...c, gain };
       }
       if (best) {
-        if (best.sell != null) {
-          const o = run.offers[best.i];
-          R.sell(run, best.sell);
-          run.offers.splice(best.i, 1);
-          run.gold -= o.price;
-          R.setTower(run, T.insert(run.tower, { id: o.id, tier: o.tier, alloy: null }, best.pos));
-        } else R.buy(run, best.i, best.pos, best.upgrade);
+        if (best.sell != null) R.act(run, { t: 'sell', idx: best.sell });
+        R.act(run, { t: 'buy', offer: best.i, pos: best.pos, upgrade: best.sell == null && !!best.upgrade });
         current = this.evaluate(run, run.tower);
         continue;
       }
       if (run.gold >= run.rerollCost + 3 && guard < 8) {
-        R.reroll(run);
+        R.act(run, { t: 'reroll' });
         continue;
       }
       break;
@@ -158,24 +173,22 @@ export class TinkerBot implements R.Bot {
   }
 
   optimizeOrder(run: R.Run): void {
-    let tower = run.tower;
-    let cur = this.evaluate(run, tower);
+    let cur = this.evaluate(run, run.tower);
     // Hill climbing: move one room to another position as long as that improves the tower.
     for (let step = 0; step < 12; step++) {
-      let best: { t: T.FullTower; s: number } | null = null;
+      const tower = run.tower;
+      let best: { from: number; to: number; s: number } | null = null;
       for (let i = 0; i < tower.rooms.length; i++) {
         for (let j = 0; j < tower.rooms.length; j++) {
           if (i === j) continue;
-          const t = T.move(tower, i, j);
-          const s = this.evaluate(run, t);
-          if (s > cur + 0.01 && (!best || s > best.s)) best = { t, s };
+          const s = this.evaluate(run, T.move(tower, i, j));
+          if (s > cur + 0.01 && (!best || s > best.s)) best = { from: i, to: j, s };
         }
       }
       if (!best) break;
-      tower = T.applyFusions(best.t).tower;
-      cur = this.evaluate(run, tower);
+      R.act(run, { t: 'move', from: best.from, to: best.to });
+      cur = this.evaluate(run, run.tower);
     }
-    R.setTower(run, tower);
   }
 
   chooseOmen(run: R.Run, omens: R.Omen[]): R.Omen {

@@ -63,6 +63,10 @@ Ein Wert ist eine Liste von Termen, die von links nach rechts addiert werden. Di
 
 `aura: { rel, targetTags?, value }` multipliziert die Wirkung von Nachbarn. `rel: "above"` wirkt nur auf den Raum darüber, `rel: "any"` auf beide Nachbarn. Spitze und Fundament sind Nachbarn. Mit `targetTags` wirkt die Aura nur auf Räume mit einem dieser Schlagworte. `tier`-Terme beziehen sich auf die Stufe der Quelle.
 
+## Rivalen und Vorzeichen
+
+Die Gegner sind rivalisierende Uhrmacher:innen, eine Person je Zunft (`rivals`: `name`, `title`). Die Vorzeichen (`omens`) bestimmen den Rang des Gegners und die Belohnung: `diff` als Faktor auf die Integrität, `gold`, optional `alloy` (Legierung als Belohnung), `fight: false` mit `merchant` für den Händler.
+
 ## Legierung
 
 | Feld | Wirkung |

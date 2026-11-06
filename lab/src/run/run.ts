@@ -1,30 +1,19 @@
-// A run: 12 hours. Each hour = workshop (shop) → omen (choose the opponent) → fight.
+// A run: 12 hours. Each hour = workshop (shop) → omen (choose the opponent) → fight → reward.
+//
+// The run is a state machine driven by actions. Every accepted action is appended to
+// run.actions, so seed + actions reproduce a run exactly: that is the save game, the replay for
+// bug reports and the contract with the GDScript port (tests/golden/runs.json).
 import { Rng, hashSeed, round } from '../rng.ts';
-import { ROOMS, SHOP_ROOMS, GUILDS, FUSIONS, ALLOY_IDS, type RoomDef } from '../content.ts';
-import { fight, type Frame, type RoomStats } from '../engine/combat.ts';
+import { ROOMS, SHOP_ROOMS, GUILDS, FUSIONS, ALLOY_IDS, OMENS, RIVALS, type RoomDef, type Omen } from '../content.ts';
+import { fight, type Frame, type RoomStats, type FightResult } from '../engine/combat.ts';
 import * as T from '../engine/tower.ts';
+
+export type { Omen };
+export { OMENS };
 
 export const HOURS = 12;
 export const LIVES = 3;
 export const ACTIVE_GUILDS = 3; // of 4 guilds, 3 are in the pool per run
-
-export interface Omen {
-  id: string;
-  name: string;
-  diff?: number;
-  gold: number;
-  alloy?: boolean;
-  fight?: boolean;
-  merchant?: number;
-}
-
-export const OMENS: Record<string, Omen> = {
-  schwach: { id: 'schwach', name: 'Streunende Rostwölfe', diff: 0.8, gold: 2 },
-  normal: { id: 'normal', name: 'Uhrwerk-Wächter', diff: 1.0, gold: 5 },
-  elite: { id: 'elite', name: 'Elite: Rostende Ruine', diff: 1.2, gold: 7, alloy: true },
-  haendler: { id: 'haendler', name: 'Wandernder Händler', fight: false, gold: 3, merchant: 2 },
-  boss: { id: 'boss', name: 'Mitternacht', diff: 1.3, gold: 0 },
-};
 
 // Integrity grows faster than linearly because damage grows multiplicatively through tiers and
 // synergies. A table (from 80 + 180 · h^1.4), because powers may differ between JS and GDScript.
@@ -32,9 +21,7 @@ export const HP_TABLE: readonly number[] = [80, 260, 555, 918, 1334, 1793, 2291,
 export const playerHp = (hour: number): number => HP_TABLE[Math.min(hour, HP_TABLE.length - 1)];
 export const income = (hour: number): number => 9 + Math.ceil(hour / 2);
 export const price = (id: string, tier = 0): number => ROOMS[id].height * 3 * (tier + 1);
-const MONSTER_NAMES: Record<string, string> = {
-  wehr: 'Belagerungsturm', uhrwerk: 'Zeitdiebe', glocke: 'Totenglocke', alchemie: 'Giftmischer',
-};
+export const sellPrice = (id: string, tier = 0): number => Math.floor(price(id, tier) / 2);
 
 export interface Offer {
   id: string;
@@ -59,14 +46,26 @@ export interface FightEntry {
   alloy?: string;
 }
 
-/** Ghost towers by hour, shared between runs of one simulation. */
+/** Ghost towers by hour, shared between runs of one simulation. The game has none (M7). */
 export type GhostPool = Record<number, T.FullTower[]>;
+
+export type Phase = 'shop' | 'omen' | 'alloy' | 'over';
+
+export type Action =
+  | { t: 'buy'; offer: number; pos: number; upgrade: boolean }
+  | { t: 'sell'; idx: number }
+  | { t: 'move'; from: number; to: number }
+  | { t: 'reroll' }
+  | { t: 'endShop' }
+  | { t: 'omen'; id: string }
+  | { t: 'alloy'; idx: number };
 
 export interface Run {
   seed: number;
   rng: Rng;
   guilds: string[];
   ghostPool: GhostPool | null;
+  phase: Phase;
   hour: number;
   gold: number;
   lives: number;
@@ -75,8 +74,11 @@ export interface Run {
   offers: Offer[];
   rerollCost: number;
   merchant: number;
+  omens: Omen[];
+  pendingAlloy: string | null;
   fusionsFound: string[];
   fights: FightEntry[];
+  actions: Action[];
   over: boolean;
   midnight: boolean;
 }
@@ -86,7 +88,7 @@ export interface Bot {
   contributesGhosts: boolean;
   shop(run: Run): void;
   chooseOmen(run: Run, omens: Omen[]): Omen;
-  chooseAlloyTarget?(run: Run, alloy: string): number;
+  chooseAlloyTarget(run: Run, alloy: string): number;
 }
 
 export interface Opponent {
@@ -96,16 +98,19 @@ export interface Opponent {
   ghost: boolean;
 }
 
+/** Creates a run and opens the workshop of hour 1. */
 export function createRun(seed: number, { ghostPool = null }: { ghostPool?: GhostPool | null } = {}): Run {
   const rng = new Rng(hashSeed('run', seed));
   const guilds = rng.shuffle(Object.keys(GUILDS)).slice(0, ACTIVE_GUILDS);
-  return {
+  const run: Run = {
     seed, rng, guilds, ghostPool,
-    hour: 0, gold: 0, lives: LIVES, wins: 0,
+    phase: 'shop', hour: 0, gold: 0, lives: LIVES, wins: 0,
     tower: T.emptyTower(),
-    offers: [], rerollCost: 1, merchant: 0,
-    fusionsFound: [], fights: [], over: false, midnight: false,
+    offers: [], rerollCost: 1, merchant: 0, omens: [], pendingAlloy: null,
+    fusionsFound: [], fights: [], actions: [], over: false, midnight: false,
   };
+  startHour(run);
+  return run;
 }
 
 // ---------------------------------------------------------------- workshop
@@ -136,14 +141,14 @@ function calledRooms(tower: T.Tower): Set<string> {
   return called;
 }
 
-function pickWeighted<T>(rng: Rng, items: readonly T[], weight: (x: T) => number): T {
+function pickWeighted<X>(rng: Rng, items: readonly X[], weight: (x: X) => number): X {
   const total = items.reduce((s, x) => s + weight(x), 0);
   let r = rng.float() * total;
   for (const x of items) if ((r -= weight(x)) < 0) return x;
   return items[items.length - 1];
 }
 
-export function rollOffers(run: Run): void {
+function rollOffers(run: Run): void {
   const pool = SHOP_ROOMS.filter((r) => run.guilds.includes(r.guild));
   const owned = new Set(run.tower.rooms.map((r) => r.id));
   const called = calledRooms(run.tower);
@@ -155,12 +160,13 @@ export function rollOffers(run: Run): void {
   });
 }
 
-export function startHour(run: Run): void {
+function startHour(run: Run): void {
   run.hour++;
   run.gold += income(run.hour);
   run.rerollCost = 1;
   rollOffers(run);
   run.merchant = 0;
+  run.phase = 'shop';
 }
 
 function commit(run: Run, tower: T.FullTower): string[] {
@@ -171,9 +177,9 @@ function commit(run: Run, tower: T.FullTower): string[] {
 }
 
 /**
- * The tower after a purchase, without performing it (for bots and UI previews).
- * upgrade=true: a duplicate upgrades the room already in the tower. Otherwise it is built as a
- * separate room.
+ * The tower after a purchase, without performing it (for bots and UI previews), or null if the
+ * purchase is not possible. upgrade=true: a duplicate upgrades the room already in the tower.
+ * Otherwise the offer is built as a separate room at pos.
  */
 export function previewBuy(run: Run, offerIdx: number, pos: number, upgrade = true): T.FullTower | null {
   const o = run.offers[offerIdx];
@@ -188,39 +194,17 @@ export function previewBuy(run: Run, offerIdx: number, pos: number, upgrade = tr
   return T.insert(run.tower, { id: o.id, tier: o.tier, alloy: null }, pos);
 }
 
-export function buy(run: Run, offerIdx: number, pos: number, upgrade = true): boolean {
-  const t = previewBuy(run, offerIdx, pos, upgrade);
-  if (!t) return false;
-  run.gold -= run.offers[offerIdx].price;
-  run.offers.splice(offerIdx, 1);
-  commit(run, t);
-  return true;
-}
-
-export function sell(run: Run, idx: number): void {
-  const r = run.tower.rooms[idx];
-  run.gold += Math.floor(price(r.id, r.tier) / 2);
-  run.tower = T.remove(run.tower, idx);
-}
-
-export function reroll(run: Run): boolean {
-  if (run.gold < run.rerollCost) return false;
-  run.gold -= run.rerollCost;
-  run.rerollCost++;
-  rollOffers(run);
-  return true;
-}
-
-export function setTower(run: Run, tower: T.FullTower): void {
-  commit(run, tower);
-}
-
 // ---------------------------------------------------------------- omens and opponents
 export function omensFor(run: Run): Omen[] {
   if (run.hour === HOURS) return [OMENS.boss];
   if (run.hour === 4 || run.hour === 8) return [OMENS.elite];
   const rng = new Rng(hashSeed(run.seed, 'omen', run.hour));
   return rng.shuffle(['schwach', 'normal', 'elite', 'haendler']).slice(0, 3).map((k) => OMENS[k]);
+}
+
+export function rivalName(guild: string): string {
+  const r = RIVALS[guild];
+  return `${r.name}, ${r.title}`;
 }
 
 export function generateMonster(seed: number, hour: number, diff = 1): Opponent {
@@ -239,32 +223,34 @@ export function generateMonster(seed: number, hour: number, diff = 1): Opponent 
     tower = T.insert(tower, { id: def.id, tier, alloy }, tower.rooms.length);
   }
   tower = T.applyFusions(tower).tower;
-  return { name: MONSTER_NAMES[guild], tower, hp: round(playerHp(hour) * diff), ghost: false };
+  return { name: rivalName(guild), tower, hp: round(playerHp(hour) * diff), ghost: false };
 }
 
 function opponentFor(run: Run, omen: Omen): Opponent {
   const pool = run.ghostPool?.[run.hour];
   if (run.hour >= 5 && pool?.length && run.rng.chance(0.5)) {
     const g = run.rng.pick(pool);
-    return { name: 'Geister-Turm', tower: g, hp: round(playerHp(run.hour) * (omen.diff ?? 1)), ghost: true };
+    return { name: 'Turm eines anderen Spielers', tower: g, hp: round(playerHp(run.hour) * (omen.diff ?? 1)), ghost: true };
   }
   return generateMonster(hashSeed(run.seed, omen.id), run.hour, omen.diff);
 }
 
-export interface ResolveOptions {
-  record?: boolean;
-  chooseAlloyTarget?: (run: Run, alloy: string) => number;
+function nextHour(run: Run): void {
+  if (run.over) run.phase = 'over';
+  else startHour(run);
 }
 
-export function resolveHour(run: Run, omen: Omen, { record = false, chooseAlloyTarget }: ResolveOptions = {}): FightEntry | null {
+function resolveOmen(run: Run, omen: Omen, record: boolean): FightEntry | null {
   run.gold += omen.gold ?? 0;
   if (omen.fight === false) {
     run.merchant = omen.merchant ?? 0;
     run.fights.push({ hour: run.hour, omen: omen.id, skipped: true });
+    if (run.hour >= HOURS) run.over = true;
+    nextHour(run);
     return null;
   }
   const opp = opponentFor(run, omen);
-  const res = fight(run.tower, playerHp(run.hour), opp.tower, opp.hp, { record });
+  const res: FightResult = fight(run.tower, playerHp(run.hour), opp.tower, opp.hp, { record });
   const won = res.winner === 'a';
   const entry: FightEntry = {
     hour: run.hour, omen: omen.id, opponent: opp.name, ghost: opp.ghost, won,
@@ -274,19 +260,95 @@ export function resolveHour(run: Run, omen: Omen, { record = false, chooseAlloyT
   run.fights.push(entry);
   if (won) {
     run.wins++;
-    if (omen.alloy && run.tower.rooms.length) {
-      const alloy = run.rng.pick(ALLOY_IDS);
-      const idx = chooseAlloyTarget ? chooseAlloyTarget(run, alloy) : run.rng.int(run.tower.rooms.length);
-      if (idx != null && idx >= 0) run.tower = T.setRoom(run.tower, idx, { alloy });
-      entry.alloy = alloy;
-    }
     if (run.hour === HOURS) run.midnight = true;
   } else {
     run.lives--;
     if (run.lives <= 0) run.over = true;
   }
   if (run.hour >= HOURS) run.over = true;
+  if (won && omen.alloy && run.tower.rooms.length) {
+    run.pendingAlloy = run.rng.pick(ALLOY_IDS);
+    entry.alloy = run.pendingAlloy;
+    run.phase = 'alloy';
+  } else nextHour(run);
   return entry;
+}
+
+/**
+ * Applies one player action. Returns false (and changes nothing) when the action is not allowed
+ * in the current phase or state. Accepted actions are appended to run.actions.
+ */
+export function act(run: Run, a: Action, { record = false }: { record?: boolean } = {}): boolean {
+  if (!applyAction(run, a, record)) return false;
+  run.actions.push(a);
+  return true;
+}
+
+function applyAction(run: Run, a: Action, record: boolean): boolean {
+  switch (run.phase) {
+    case 'shop':
+      switch (a.t) {
+        case 'buy': {
+          const t = previewBuy(run, a.offer, a.pos, a.upgrade);
+          if (!t) return false;
+          run.gold -= run.offers[a.offer].price;
+          run.offers.splice(a.offer, 1);
+          commit(run, t);
+          return true;
+        }
+        case 'sell': {
+          const r = run.tower.rooms[a.idx];
+          if (!r) return false;
+          run.gold += sellPrice(r.id, r.tier);
+          run.tower = T.remove(run.tower, a.idx);
+          return true;
+        }
+        case 'move': {
+          const n = run.tower.rooms.length;
+          if (a.from === a.to || a.from < 0 || a.to < 0 || a.from >= n || a.to >= n) return false;
+          commit(run, T.move(run.tower, a.from, a.to));
+          return true;
+        }
+        case 'reroll':
+          if (run.gold < run.rerollCost) return false;
+          run.gold -= run.rerollCost;
+          run.rerollCost++;
+          rollOffers(run);
+          return true;
+        case 'endShop':
+          run.omens = omensFor(run);
+          run.phase = 'omen';
+          return true;
+        default:
+          return false;
+      }
+    case 'omen': {
+      if (a.t !== 'omen') return false;
+      const omen = run.omens.find((o) => o.id === a.id);
+      if (!omen) return false;
+      run.omens = [];
+      resolveOmen(run, omen, record);
+      return true;
+    }
+    case 'alloy': {
+      if (a.t !== 'alloy' || a.idx < 0 || a.idx >= run.tower.rooms.length || !run.pendingAlloy) return false;
+      run.tower = T.setRoom(run.tower, a.idx, { alloy: run.pendingAlloy });
+      run.pendingAlloy = null;
+      nextHour(run);
+      return true;
+    }
+    default:
+      return false;
+  }
+}
+
+/** Rebuilds a run from its seed and action list (save game, bug report replay). */
+export function replay(seed: number, actions: readonly Action[]): Run {
+  const run = createRun(seed);
+  for (const a of actions) {
+    if (!act(run, a)) throw new Error(`action ${run.actions.length} rejected: ${JSON.stringify(a)}`);
+  }
+  return run;
 }
 
 export function recordGhost(run: Run): void {
@@ -299,12 +361,17 @@ export function recordGhost(run: Run): void {
 /** Plays a whole run with a bot. */
 export function playRun(seed: number, bot: Bot, opts: { ghostPool?: GhostPool | null; record?: boolean } = {}): Run {
   const run = createRun(seed, opts);
-  while (!run.over) {
-    startHour(run);
-    bot.shop(run);
-    if (bot.contributesGhosts) recordGhost(run);
-    const omen = bot.chooseOmen(run, omensFor(run));
-    resolveHour(run, omen, { record: opts.record, chooseAlloyTarget: bot.chooseAlloyTarget?.bind(bot) });
+  const record = !!opts.record;
+  while (run.phase !== 'over') {
+    if (run.phase === 'shop') {
+      bot.shop(run);
+      if (bot.contributesGhosts) recordGhost(run);
+      act(run, { t: 'endShop' });
+    } else if (run.phase === 'omen') {
+      act(run, { t: 'omen', id: bot.chooseOmen(run, run.omens).id }, { record });
+    } else if (run.phase === 'alloy') {
+      act(run, { t: 'alloy', idx: bot.chooseAlloyTarget(run, run.pendingAlloy!) });
+    }
   }
   return run;
 }

@@ -55,6 +55,10 @@ Warum das Theme trägt:
 Fantasy bleibt erlaubt: Alchemielabor, Krypta, Observatorium, Taubenschlag, Drachenhorst sind
 Räume neben Werkstatt, Glockenstube und Pendelkammer. Das hält die Loot-Vielfalt von Bazaar.
 
+### Die Gegner (entschieden am 06.11.2026)
+
+Deine Gegner sind rivalisierende Uhrmacher:innen. Auch sie bauen Türme und wollen vor dir Mitternacht schlagen. Jede Zunft hat ihre Rivalin oder ihren Rivalen: Ida Kessler (Festungsbauerin, Wehr), Benno Feder (Federmacher, Uhrwerk), Marta Klang (Glockengießerin, Glocken) und Oskar Rauch (Alchemist). Die Vorzeichen zeigen, wer dich herausfordert: ein Lehrling, eine Gesellin, ein Meister oder der wandernde Händler. Um Mitternacht wartet die Großmeisterin. Später treten auch Türme anderer Spieler als Geister an (M7).
+
 ### Alternativen, die geprüft wurden
 
 - **Totem / Geisterpfahl:** optisch stark, aufsteigende Flamme als Funke. Verworfen wegen
