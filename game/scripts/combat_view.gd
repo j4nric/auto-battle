@@ -6,8 +6,12 @@ extends Control
 const TICK := 0.6
 const SPEEDS := [0.5, 1.0, 2.0, 4.0]
 
-## Set by the caller before changing to this scene (see UhrScenarios.build).
+## Set by the caller before changing to this scene (see UhrScenarios.build). In run mode it also
+## carries the fight already computed by the run ("result") and the rival's name ("foe_name").
 static var pending: Dictionary = {}
+
+const RUN_SCENE := "res://scenes/run.tscn"
+const MAIN_SCENE := "res://scenes/main.tscn"
 
 var setup: Dictionary
 var result: Dictionary
@@ -92,7 +96,7 @@ func _build_ui() -> void:
 
 	var head := HBoxContainer.new()
 	var back := UhrStyle.button("Zurück")
-	back.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://scenes/main.tscn"))
+	back.pressed.connect(_leave)
 	head.add_child(back)
 	var titles := VBoxContainer.new()
 	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -112,7 +116,11 @@ func _build_ui() -> void:
 		var box := VBoxContainer.new()
 		box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		box.add_theme_constant_override("separation", 3)
-		box.add_child(UhrStyle.label("Dein Turm" if side == "a" else "Gegner", 15, UhrStyle.TEXT, false))
+		var who := "Dein Turm" if side == "a" else str(setup.get("foe_name", "Gegner"))
+		var name_label := UhrStyle.label(who, 15, UhrStyle.TEXT, false)
+		name_label.clip_text = true
+		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		box.add_child(name_label)
 		var bar := HpBar.new()
 		bar.custom_minimum_size.y = 24
 		bar.color = UhrStyle.MINE if side == "a" else UhrStyle.FOE
@@ -154,15 +162,34 @@ func _build_ui() -> void:
 		_step())
 	speed_button = UhrStyle.button("1×")
 	speed_button.pressed.connect(_cycle_speed)
-	var next := UhrStyle.button("Neu")
-	next.pressed.connect(_new_fight)
+	var next := UhrStyle.button("Weiter" if _is_run() else "Neu")
+	next.pressed.connect(_leave if _is_run() else _new_fight)
 	for b in [again, play_button, step, speed_button, next]:
+		# Five buttons must fit 358 px: smaller text and padding than the default button.
+		b.add_theme_font_size_override("font_size", 16)
+		for st in ["normal", "hover", "pressed", "focus", "disabled"]:
+			var sb: StyleBoxFlat = b.get_theme_stylebox(st).duplicate()
+			sb.content_margin_left = 8
+			sb.content_margin_right = 8
+			b.add_theme_stylebox_override(st, sb)
+		b.custom_minimum_size.x = 0
 		controls.add_child(b)
 	col.add_child(controls)
 
 
+func _is_run() -> bool:
+	return setup.get("mode", "") == "run"
+
+
+func _leave() -> void:
+	get_tree().change_scene_to_file(RUN_SCENE if _is_run() else MAIN_SCENE)
+
+
 func _start_fight() -> void:
-	result = UhrCombat.fight(setup.mine, int(setup.hp_mine), setup.foe, int(setup.hp_foe), true)
+	if setup.has("result"):
+		result = setup.result
+	else:
+		result = UhrCombat.fight(setup.mine, int(setup.hp_mine), setup.foe, int(setup.hp_foe), true)
 	frames = result.frames
 	title_label.text = "Stunde %d · %s" % [int(setup.hour), setup.title]
 	towers.a.setup(setup.mine)
@@ -316,9 +343,9 @@ func _show_summary() -> void:
 	var again := UhrStyle.button("Nochmal")
 	again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	again.pressed.connect(func() -> void: _restart())
-	var next := UhrStyle.button("Neuer Kampf", true)
+	var next := UhrStyle.button("Weiter" if _is_run() else "Neuer Kampf", true)
 	next.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	next.pressed.connect(_new_fight)
+	next.pressed.connect(_leave if _is_run() else _new_fight)
 	row.add_child(again)
 	row.add_child(next)
 	col.add_child(row)
