@@ -1,0 +1,14 @@
+{
+  "name": "uhrturm-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Prototyp: sequenzieller Auto Battler (Uhrturm) – headless Kampf-Engine und Simulation",
+  "scripts": {
+    "test": "node --test",
+    "sim": "node sim/simulate.js",
+    "sim:quick": "node sim/simulate.js --runs 60",
+    "viewer": "node sim/serve.js"
+  },
+  "engines": { "node": ">=20" }
+}

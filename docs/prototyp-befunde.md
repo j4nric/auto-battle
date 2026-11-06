@@ -1,0 +1,69 @@
+# Prototyp 0.1: Befunde aus der Simulation
+
+Grundlage: `sim/output/report.md`, 300 Runs pro Bot, Seed 1. Der Bericht lässt sich mit
+`npm run sim` jederzeit neu erzeugen.
+
+## Was gebaut wurde
+
+- **Kampf-Engine** (`src/engine/combat.js`): deterministisch und seedbar. Pro Turm läuft ein Funke
+  von unten nach oben. Jeder Raum kostet so viel Tempo, wie er Etagen hoch ist. Zähler, Spannung,
+  Auren, Echo, zweiter Funke, Brand, Gift, Öl, Rost und Zeitzerfall sind umgesetzt.
+- **Inhalte** (`src/content/`): 4 Zünfte mit 28 Räumen, 4 versteckte Verschmelzungen, 6 Legierungen.
+- **Run-Loop** (`src/run/run.js`): 12 Stunden mit Werkstatt, Vorzeichen und Kampf, 3 Leben,
+  Monster in den frühen Stunden und Geister-Türme anderer Runs ab Stunde 5.
+- **Bots** (`src/run/bots.js`): Ein Zufallsbot und ein „Tüftler“, der Kandidaten über Testkämpfe
+  bewertet. Dazu Varianten ohne Reihenfolge-Optimierung, mit maximal 5 Etagen und mit Kodex-Wissen.
+- **Viewer** (`viewer/`): Hochkant-Ansicht, die einen Bot-Run Takt für Takt abspielt.
+
+## Kernfragen und Antworten
+
+| Frage | Antwort aus der Simulation |
+|---|---|
+| Entscheidet der Build? | Ja. Der Zufallsbot erreicht nie Mitternacht, der Tüftler in 32 % der Runs. |
+| Zählt die Reihenfolge? | Ja. 83 % aller zufälligen Umsortierungen fertiger Türme sind spürbar schlechter. Ohne Reihenfolge-Optimierung sinkt die Mitternacht-Quote von 32 % auf 26 %. |
+| Sind Runs verschieden? | Ja. 256 von 300 End-Türmen sind verschiedene Raum-Kombinationen. |
+| Kompakt oder breit? | Ausgeglichen, wenn eine leere Etage den Funken 0,5 Takte kostet. Kostet sie nichts, dominieren kompakte Türme. |
+| Wie lang sind Kämpfe? | 22 s in Stunde 1, rund 14 s ab Stunde 7. Gut ein Drittel der Kämpfe erreicht den Zeitzerfall. |
+
+## Design-Regeln, die die Simulation erzwungen hat
+
+1. **Leere Etagen kosten Zeit.** Ohne diese Regel feuert ein Turm aus zwei Räumen jeden Takt.
+   Ein halber Takt pro leerer Etage hält „kompakt gegen breit“ als echte Entscheidung offen.
+2. **Integrität wächst überlinear.** Schaden wächst über Stufen und Synergien multiplikativ.
+   Mit linear wachsender Integrität schrumpften Kämpfe von 21 s auf 5 s.
+3. **Rost und Öl skalieren additiv, nicht mit der Stufe.** Sonst stand der gegnerische Funke still.
+4. **Kettenreaktionen dürfen sich nicht selbst speisen.** Die Bots haben drei Exploits gefunden:
+   - Drei Zeitschleifen übereinander lösen sich exponentiell aus. Jetzt gilt: Echo-Räume lassen sich nicht wiederholen.
+   - Kupfer-Legierung plus Umlauf (Spitze und Fundament sind Nachbarn) ergab eine Endlosschleife.
+     Dieser Turm landete als Geist im Pool und zerlegte andere Runs, wie ein kaputtes Meta.
+     Jetzt gilt: Kupfer leitet nur bei direkter Auslösung durch den Funken.
+   - Zwei Glockenspiele schlugen sich gegenseitig an. Jetzt gilt: Glocken mit Zähler 1 werden nicht weitergezählt.
+5. **Verschmelzungen brauchen verschiedene Räume.** Rezepte aus drei gleichen Räumen konkurrieren
+   mit der Aufwertung durch Duplikate und wurden nie gebaut.
+6. **Verschmelzungen müssen klar stärker sein als ihre Teile.** Die ersten Versionen von
+   Glockenspiel und Antriebswerk waren schwächer und wurden zu Recht ignoriert. Jetzt sparen sie
+   zusätzlich eine Etage.
+7. **Der Turm ruft fehlende Rezept-Teile.** Liegt ein Rezept bis auf ein Teil im Turm, erscheint
+   das fehlende Teil viermal so oft im Shop. Zweier-Rezepte werden so in 37 bis 50 % der Runs
+   gefunden, Dreier-Rezepte bleiben selten (4 % ohne, 13 % mit Kodex-Wissen). Das passt zum Ziel,
+   dass Entdeckungen sich besonders anfühlen.
+
+## Offene Balance-Baustellen
+
+- **Glocken und Wehr sind zu schwach.** Türme werden zu 50 % von Alchemie und zu 38 % von Uhrwerk
+  dominiert. Runs mit Glocken, Uhrwerk und Wehr erreichen nur zu 13 % Mitternacht, andere Kombinationen bis 47 %.
+- **Die Zeitschleife ist zu stark.** Sie steht in 68 % der End-Türme, in denen Uhrwerk aktiv ist.
+- **Stunden 2 bis 4 sind zu leicht** (84 bis 90 % Siege). Ab Stunde 5 mischen Geister mit und es pendelt sich bei 65 bis 75 % ein.
+- **Glas wird selten gewählt.** Die Legierung zerbricht fast sofort.
+- **Beitragsmessung für Verstärker fehlt.** Echo, Schmiede und Rostkammer zeigen 0 % Beitrag,
+  weil ihr Effekt dem Zielraum gutgeschrieben wird. Für die Kampf-Zusammenfassung im Spiel
+  braucht es eine Zuordnung „ermöglicht durch“.
+
+## Grenzen dieser Simulation
+
+- Die Bots bewerten gierig Schritt für Schritt. Menschen planen weiter voraus und finden
+  vermutlich mehr mehrstufige Synergien.
+- Monster werden zufällig zusammengesetzt und nutzen kaum Synergien.
+- Geister stammen nur aus Bot-Runs derselben Simulation.
+- Ob sich der sequenzielle Funke **gut anfühlt**, kann keine Simulation beantworten.
+  Dafür braucht es einen spielbaren Prototyp auf dem Handy.

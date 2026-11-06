@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14121a">
+<title>Uhrturm Prototyp</title>
+<style>
+  :root {
+    --bg: #14121a; --panel: #1f1c27; --line: #34303f; --text: #ece7f5; --muted: #9a93ab;
+    --gold: #e8b64c; --win: #6fcf8a; --loss: #e06666; --shield: #7fb3d5; --burn: #ff8a3d; --poison: #9ccc65;
+    --floor: 40px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.35 system-ui, -apple-system, Segoe UI, sans-serif; }
+  body { max-width: 440px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom); }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 10px 0 6px; gap: 8px; }
+  header h1 { font-size: 16px; margin: 0; letter-spacing: .02em; }
+  header .meta { color: var(--muted); font-size: 12px; text-align: right; }
+  .hours { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; margin: 4px 0 8px; }
+  .hours button { border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 6px; padding: 6px 0; font-size: 12px; font-weight: 600; }
+  .hours button.w { color: var(--win); } .hours button.l { color: var(--loss); } .hours button.s { color: var(--gold); }
+  .hours button.on { outline: 2px solid var(--gold); color: var(--text); }
+  .hours button:disabled { opacity: .25; }
+  .arena { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: 1; }
+  .side h2 { font-size: 13px; margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar { position: relative; height: 16px; background: #2a2633; border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+  .bar > i { position: absolute; inset: 0 auto 0 0; background: var(--win); transition: width .15s; }
+  .side.b .bar > i { background: var(--loss); }
+  .bar > em { position: absolute; inset: 0 auto 0 0; background: var(--shield); opacity: .55; transition: width .15s; }
+  .bar span { position: relative; font-size: 11px; padding-left: 6px; font-style: normal; }
+  .status { display: flex; gap: 6px; font-size: 11px; min-height: 16px; color: var(--muted); flex-wrap: wrap; }
+  .status b { font-weight: 600; }
+  .tower { display: flex; flex-direction: column-reverse; gap: 3px; margin-top: 6px; position: relative; }
+  .empty { height: calc(var(--floor) * var(--h)); border: 1px dashed var(--line); border-radius: 6px; opacity: .5; }
+  .room { position: relative; height: calc(var(--floor) * var(--h) + 3px * (var(--h) - 1)); border-radius: 6px; padding: 4px 6px;
+          background: var(--panel); border-left: 4px solid var(--c); display: flex; flex-direction: column; justify-content: center;
+          transition: transform .12s, background .12s; overflow: hidden; }
+  .room .n { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .room .t { font-size: 10px; color: var(--muted); }
+  .room.broken { opacity: .3; text-decoration: line-through; }
+  .room.spark::after { content: ''; position: absolute; left: -4px; top: 0; bottom: 0; width: 4px; background: #fff; box-shadow: 0 0 10px 3px var(--gold); }
+  .room.fire { background: #3a3346; transform: scale(1.03); }
+  .pop { position: absolute; right: 6px; top: 2px; font-size: 13px; font-weight: 700; animation: up .7s ease-out forwards; pointer-events: none; }
+  @keyframes up { from { opacity: 1; transform: translateY(6px); } to { opacity: 0; transform: translateY(-14px); } }
+  .controls { position: sticky; bottom: 0; z-index: 2; background: linear-gradient(transparent, var(--bg) 30%); padding: 14px 0 10px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
+  .controls button { min-height: 48px; border: 0; border-radius: 10px; background: var(--panel); color: var(--text); font-size: 15px; font-weight: 600; }
+  .controls button.primary { background: var(--gold); color: #1b1505; }
+  .tick { color: var(--muted); font-size: 12px; text-align: center; margin-top: 6px; }
+  .summary { background: var(--panel); border-radius: 10px; padding: 10px; margin: 8px 0 12px; font-size: 12px; }
+  .summary h3 { margin: 0 0 6px; font-size: 13px; }
+  .summary div { display: flex; justify-content: space-between; padding: 2px 0; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; background: #262230; border-radius: 14px 14px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); max-width: 440px; margin: 0 auto;
+           transform: translateY(110%); transition: transform .2s, visibility .2s; box-shadow: 0 -8px 24px #0008; visibility: hidden; }
+  .sheet.open { transform: none; visibility: visible; }
+  .sheet h3 { margin: 0 0 4px; } .sheet p { margin: 4px 0; color: var(--muted); }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Uhrturm · Prototyp</h1>
+    <div class="meta" id="meta"></div>
+  </header>
+  <div class="hours" id="hours"></div>
+  <div class="arena">
+    <section class="side a" id="sideA"></section>
+    <section class="side b" id="sideB"></section>
+  </div>
+  <div class="tick" id="tick"></div>
+  <div id="summary"></div>
+  <div class="controls">
+    <button id="restart" aria-label="Kampf neu starten">↺</button>
+    <button id="play" class="primary">▶</button>
+    <button id="speed">1×</button>
+    <button id="reroll" aria-label="Neuer Run">Neu</button>
+  </div>
+  <div class="sheet" id="sheet"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
