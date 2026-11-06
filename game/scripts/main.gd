@@ -52,8 +52,18 @@ func _ready() -> void:
 		tower.add_child(p)
 		floor_panels.push_front(p)
 
-	var fight := UhrStyle.button("Kampf ansehen", true)
-	fight.custom_minimum_size.y = 58
+	var saved := UhrSession.saved_summary()
+	if saved != "":
+		var cont := UhrStyle.button("Weiterspielen · %s" % saved, true)
+		cont.custom_minimum_size.y = 58
+		cont.pressed.connect(_continue_run)
+		col.add_child(cont)
+	var start := UhrStyle.button("Neuer Run", saved == "")
+	start.custom_minimum_size.y = 58
+	start.pressed.connect(func() -> void: _start_run(int(Time.get_unix_time_from_system()) % 1000000))
+	col.add_child(start)
+
+	var fight := UhrStyle.button("Kampf ansehen")
 	fight.pressed.connect(func() -> void: _open_fight(int(Time.get_unix_time_from_system()) % 100000, -1, 0))
 	col.add_child(fight)
 
@@ -83,6 +93,20 @@ func _ready() -> void:
 	_light(0)
 
 
+func _start_run(seed: int) -> void:
+	UhrSession.new_run(seed)
+	get_tree().change_scene_to_file("res://scenes/run.tscn")
+
+
+func _continue_run() -> void:
+	if UhrSession.load_saved() == null:
+		# The save no longer replays (rules changed since): start fresh instead of failing.
+		UhrSession.clear()
+		_start_run(int(Time.get_unix_time_from_system()) % 1000000)
+		return
+	get_tree().change_scene_to_file("res://scenes/run.tscn")
+
+
 func _open_fight(seed: int, showcase: int, hour: int) -> void:
 	CombatView.pending = UhrScenarios.build(seed, showcase, hour)
 	get_tree().change_scene_to_file("res://scenes/combat.tscn")
@@ -103,8 +127,8 @@ func _light(index: int) -> void:
 func _floor_panel(room: Dictionary) -> PanelContainer:
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", UhrStyle.box(UhrStyle.PANEL, 6, 4, UhrStyle.guild_color(room.guild)))
-	p.custom_minimum_size.y = 32
-	p.add_child(UhrStyle.label(room.name, 14, UhrStyle.TEXT, false))
+	p.custom_minimum_size.y = 26
+	p.add_child(UhrStyle.label(room.name, 13, UhrStyle.TEXT, false))
 	return p
 
 
@@ -152,10 +176,14 @@ func _toggle_debug() -> void:
 	row.add_theme_constant_override("separation", 8)
 	var close := UhrStyle.button("Schließen")
 	close.pressed.connect(_toggle_debug)
-	var go := UhrStyle.button("Kampf starten", true)
+	var go := UhrStyle.button("Kampf", true)
 	go.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	go.pressed.connect(func() -> void: _open_fight(debug_seed, debug_scenario, debug_hour))
+	var run_btn := UhrStyle.button("Run mit Seed")
+	run_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	run_btn.pressed.connect(func() -> void: _start_run(debug_seed))
 	row.add_child(close)
+	row.add_child(run_btn)
 	row.add_child(go)
 	col.add_child(row)
 	debug_panel.add_child(col)

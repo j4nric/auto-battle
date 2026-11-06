@@ -5,6 +5,8 @@ extends Control
 ## shows small numbers when a room acts. Purely visual; all numbers come from UhrCombat frames.
 
 signal room_tapped(index: int)
+## Placement mode: the player tapped the gap at position pos (0 = below the foundation).
+signal slot_tapped(pos: int)
 
 const FLOORS := 8
 const GAP := 4.0
@@ -16,6 +18,8 @@ var sparks: Array[Panel] = []
 var _layout_done := false
 ## Pops currently rising per room, so several numbers in one tick stack instead of overlapping.
 var _rising := {}
+var _slots: Array[Button] = []
+var _selected := -1
 
 
 func setup(tower: Dictionary) -> void:
@@ -91,7 +95,61 @@ func _layout() -> void:
 		var r := room_rect(i)
 		panels[i].position = r.position
 		panels[i].size = r.size
+	_layout_slots()
 	_layout_done = true
+
+
+## Workshop view: tier, alloy and bell counters without a running fight.
+func show_static() -> void:
+	for i in panels.size():
+		infos[i].text = _info_text(i, { "broken": false, "counter": 0, "charge": 0.0 })
+
+
+## Highlights one room (selected for selling, moving or an alloy), -1 for none.
+func select_room(i: int) -> void:
+	_selected = i
+	for k in panels.size():
+		var sb: StyleBoxFlat = panels[k].get_theme_stylebox("panel")
+		sb.bg_color = UhrStyle.PANEL_LIT if k == i else UhrStyle.PANEL
+		sb.border_width_right = 2 if k == i else 0
+		sb.border_width_top = 2 if k == i else 0
+		sb.border_width_bottom = 2 if k == i else 0
+
+
+## Placement mode: shows tappable gaps between the rooms, or hides them.
+func show_slots(enabled: bool) -> void:
+	for b in _slots:
+		b.queue_free()
+	_slots.clear()
+	if not enabled:
+		return
+	for pos in rooms.size() + 1:
+		var b := Button.new()
+		b.text = "hier einbauen"
+		b.add_theme_font_size_override("font_size", 12)
+		var sb := UhrStyle.box(Color(UhrStyle.BRASS, 0.85), 8)
+		for st in ["normal", "hover", "pressed", "focus"]:
+			b.add_theme_stylebox_override(st, sb)
+		for st in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+			b.add_theme_color_override(st, UhrStyle.NIGHT)
+		b.z_index = 4
+		b.pressed.connect(func() -> void: slot_tapped.emit(pos))
+		add_child(b)
+		_slots.append(b)
+	_layout_slots()
+
+
+func _layout_slots() -> void:
+	var h := 26.0
+	for pos in _slots.size():
+		var y: float
+		if pos < rooms.size():
+			y = room_rect(pos).end.y - h / 2.0
+		else:
+			y = (room_rect(rooms.size() - 1).position.y if not rooms.is_empty() else size.y) - h / 2.0 - GAP
+		y = clampf(y, 0.0, size.y - h)
+		_slots[pos].position = Vector2(size.x * 0.2, y)
+		_slots[pos].size = Vector2(size.x * 0.6, h)
 
 
 ## Applies one side of a combat frame: broken rooms, bell counters, charge and spark positions.

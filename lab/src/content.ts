@@ -95,7 +95,7 @@ interface ContentFile {
   omens: Omen[];
 }
 
-const content = data as unknown as ContentFile;
+export const content = data as unknown as ContentFile;
 
 export const TIER_MULT: readonly number[] = content.tiers.mult;
 export const TIER_NAMES: readonly string[] = content.tiers.names;
