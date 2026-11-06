@@ -1,4 +1,4 @@
-# Konzept-Brainstorm: Auto Battler (Arbeitstitel „Uhrturm“)
+# Design: Uhrturm (Arbeitstitel)
 
 Inspiration: *The Bazaar* (Item-Board, Tags, Scaling, Shop-Tage, PvP-Geister) und *Loop Hero*
 (Loop als Timer, Welt selbst gestalten, versteckte Kombinationsregeln, Rückzug mit Beute).
@@ -209,12 +209,23 @@ Keine Stat-Boosts kaufen, nur Optionen. Die Stärke muss aus dem Build kommen.
 
 ---
 
-## 10. Vorschlag für einen ersten Prototyp
+## 10. Technik und Stand
 
-Scope, der die Kernfrage „macht der Takt Spaß?“ beantwortet:
+- **Prototyp und Simulation** sind gebaut und gemessen, siehe `docs/balance/2026-11-06-prototyp.md`. Daraus folgten feste Regeln: leere Etagen kosten den Funken Zeit, Kettenreaktionen speisen sich nicht selbst, Verschmelzungen bestehen aus verschiedenen Räumen und sind klar stärker als ihre Teile.
+- **Engine:** Godot 4.7 mit GDScript, Web-Export als Testkanal, später Store-Builds (ADR 0002).
+- **Regeln zweimal:** Labor in JavaScript als Referenz und Simulationsumgebung, Port in `game/core/`, Golden-Vektoren als Vertrag (ADR 0003).
+- **Deploy:** jeder Merge auf `main` geht auf https://uhrturm-62-83-23-90.sslip.io (ADR 0004).
 
-- 1 Uhrmacher:in, 3 Zünfte mit je 10 Räumen, 4 Legierungen, 3 Verschmelzungs-Rezepte
-- 12 feste Monster-Türme, keine Geister, kein Dorf
-- Kampf-Engine als deterministische, seedbare Simulation ohne UI, damit sich tausende Kämpfe
-  headless testen lassen (Balance, Tempo, Dominanz einzelner Räume)
-- UI als Web-App im Hochkant-Format (PWA), damit sofort auf dem Handy getestet werden kann
+## 11. Meilensteine
+
+| | Meilenstein | Inhalt |
+|---|---|---|
+| M0 | Fundament | Repo-Struktur, Godot-Projekt, CI, Deploy, Cockpit, Agents |
+| M1 | Kern in Godot | Labor auf TypeScript, Inhalte als Daten, Engine portiert, Golden-Vektoren für Kämpfe |
+| M2 | Kampf spielbar | Zwei Türme, Funke animiert, auf dem Handy |
+| M3 | Run spielbar | Werkstatt, Vorzeichen, 12 Stunden, Speichern |
+| M4 | Balance-Runde 2 | Glocken und Wehr stärken, Zeitschleife bremsen, Stunden 2 bis 4 schwerer |
+| M5 | Juice | Animationen, Partikel, Haptik, Klang |
+| M6 | Meta | Dorf, Kodex, Uhrmacher:innen, Freischaltungen |
+| M7 | Geister und Tagesseed | Kleines Backend auf dem vServer |
+| M8 | Store-Builds | Android und iOS |

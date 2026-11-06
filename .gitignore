@@ -1,2 +1,4 @@
 node_modules/
-sim/output/*.json
+lab/sim/output/
+build/
+site/

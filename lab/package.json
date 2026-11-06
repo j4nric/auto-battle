@@ -1,0 +1,17 @@
+{
+  "name": "uhrturm-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Labor: Kampf-Engine, Bots und Simulation in JavaScript (Referenz für den Godot-Port)",
+  "scripts": {
+    "test": "node --test",
+    "sim": "node sim/simulate.js",
+    "sim:smoke": "node sim/simulate.js --smoke",
+    "golden": "node tools/golden.js",
+    "viewer": "node sim/serve.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

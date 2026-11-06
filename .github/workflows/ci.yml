@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  lab:
+    name: lab tests and simulation smoke
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lab
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Tests
+        run: npm test
+      - name: Golden vectors are up to date
+        run: |
+          npm run golden
+          git diff --exit-code -- ../tests/golden || { echo "::error::tests/golden is stale. Run 'npm run golden' in lab/ and commit."; exit 1; }
+      - name: Simulation smoke (determinism, no blowouts)
+        run: npm run sim:smoke
+
+  game:
+    name: godot tests and web export
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/godot
+            ~/.local/bin/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-web
+      - name: Install Godot
+        run: |
+          ./scripts/install-godot.sh --templates
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Godot tests
+        run: |
+          godot --headless --path game --import >/dev/null 2>&1 || true
+          godot --headless --path game --script res://tests/run_tests.gd
+      - name: Web export
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+          BUILD_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          export BUILD_COMMIT="${BUILD_COMMIT::7}"
+          ./scripts/build-web.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: build/web
+          retention-days: 7
+
+  deploy:
+    name: deploy to vServer
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: [lab, game]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: site
+      - name: Check secrets
+        id: secrets
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEST: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          if [ -z "$HOST" ] || [ -z "$USER" ] || [ -z "$KEY" ] || [ -z "$DEST" ]; then
+            echo "::warning::Deploy secrets missing. Skipping server step. See deploy/README.md."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Set up SSH
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Sync files
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+          DEST: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "$USER@$HOST" "mkdir -p '$DEST/site'"
+          rsync -az --delete -e "ssh -i ~/.ssh/deploy_key" site/ "$USER@$HOST:$DEST/site/"
+          rsync -az -e "ssh -i ~/.ssh/deploy_key" deploy/docker-compose.yml deploy/Caddyfile "$USER@$HOST:$DEST/"
+      - name: Start or update container
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+          DEST: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "$USER@$HOST" "
+            docker network inspect uhrturm-proxy >/dev/null 2>&1 || docker network create uhrturm-proxy
+            cd '$DEST' && docker compose up -d --remove-orphans
+            docker compose exec -T web caddy reload --config /etc/caddy/Caddyfile
+            docker compose ps
+          "

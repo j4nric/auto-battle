@@ -12,7 +12,8 @@ import { Rng, hashSeed } from '../src/rng.js';
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((acc, a, i, all) => (a.startsWith('--') ? [...acc, [a.slice(2), all[i + 1]]] : acc), []),
 );
-const RUNS = Number(args.runs ?? 200);
+const SMOKE = 'smoke' in args;
+const RUNS = Number(args.runs ?? (SMOKE ? 15 : 200));
 const SEED = Number(args.seed ?? 1);
 const TICK_SECONDS = 0.6;
 const costRunsFor = (n) => Math.max(20, Math.round(n / 3));
@@ -177,7 +178,7 @@ const alloyRows = Object.values(ALLOYS).map((a) => {
   return [a.name, a.text, rs.length, rs.length ? pct(avg(rs.map((r) => (r.midnight ? 1 : 0)))) : '–'];
 });
 const recipeRows = [];
-for (const w of [1, 4, 8]) {
+for (const w of SMOKE ? [] : [1, 4, 8]) {
   SHOP.recipePull = w;
   const res = runBatch(['tüftler', 'kodex'], costRunsFor(RUNS), SEED + 2000);
   const any3 = (rs) => pct(avg(rs.map((r) => (r.fusions.includes('glockenspiel') || r.fusions.includes('antriebswerk') ? 1 : 0))));
@@ -227,7 +228,7 @@ say();
 
 const costRuns = costRunsFor(RUNS);
 const costRows = [];
-for (const c of [0, 0.5, 1]) {
+for (const c of SMOKE ? [] : [0, 0.5, 1]) {
   CONFIG.emptyFloorCost = c;
   const res = runBatch(['tüftler', 'kompakt-5'], costRuns, SEED + 1000);
   costRows.push([
@@ -265,6 +266,22 @@ say();
 for (const r of tk.filter((r) => r.midnight).slice(0, 8)) say(`- ${T.describe(r.tower)}`);
 say();
 say(`_Laufzeit ${fmt((performance.now() - t0) / 1000, 0)} s._`);
+
+// ------------------------------------------------------------------ Smoke-Prüfungen
+if (SMOKE) {
+  const problems = [];
+  const blowouts = Object.values(main).flat().flatMap((r) => r.fights).filter((f) => f.ticks <= 5).length;
+  if (blowouts) problems.push(`${blowouts} Kämpfe nach höchstens 5 Takten entschieden (Endlos-Combo?)`);
+  // Same bot list and seed: the shared ghost pool fills identically, so the first runs must match.
+  const again = runBatch(Object.keys(main), 3, SEED);
+  const same = Object.keys(main).every((b) => again[b].every((r, i) => JSON.stringify(r.tower) === JSON.stringify(main[b][i].tower) && r.wins === main[b][i].wins));
+  if (!same) problems.push('Gleicher Seed, anderes Ergebnis: Die Simulation ist nicht deterministisch');
+  if (problems.length) {
+    for (const p of problems) console.error(`::error::${p}`);
+    process.exit(1);
+  }
+  console.log('Smoke-Prüfungen bestanden: keine Blowouts, deterministisch.');
+}
 
 mkdirSync(new URL('./output/', import.meta.url), { recursive: true });
 writeFileSync(new URL('./output/report.md', import.meta.url), out.join('\n') + '\n');

@@ -1,0 +1,71 @@
+# Uhrturm
+
+Sequenzieller Auto Battler fürs Handy im Hochformat. Ein Funke läuft durch den Turm des Spielers und löst Raum für Raum aus, der Build ist der Loop. Inspiriert von The Bazaar und Loop Hero. Doku auf Deutsch, Code und Kommentare auf Englisch.
+
+## Pflichtlektüre
+
+- `docs/DESIGN.md`: Spielkonzept, Run-Struktur, Hochkant-UI. Bei Unsicherheit über eine Mechanik hier nachsehen, nicht raten.
+- `docs/adr/`: Grundentscheidungen. Eine Grundentscheidung ändern heißt ein neues ADR schreiben.
+- `docs/balance/`: Messungen. Die jüngste Messung ist der Stand.
+
+## Aufbau
+
+| Ordner | Inhalt |
+|---|---|
+| `lab/` | Labor in JavaScript: Kampf-Engine, Run-Logik, Bots, Simulation, Browser-Viewer. Die Referenz für alle Regeln. |
+| `game/` | Godot-4.7-Projekt. `game/core/` ist der Port der Regeln, `game/scenes/` und `game/scripts/` die Oberfläche. |
+| `tests/golden/` | Golden-Vektoren aus dem Labor. Das Spiel muss sie exakt treffen. |
+| `deploy/` | Container und Caddyfile für den vServer. |
+| `scripts/` | Godot-Installation, Web-Build, Hooks. |
+
+## Befehle
+
+```sh
+cd lab && npm test                  # Labor-Tests
+cd lab && npm run golden            # Golden-Vektoren neu erzeugen
+cd lab && npm run sim:smoke         # schnelle Simulation mit Blowout- und Determinismus-Prüfung
+cd lab && npm run sim -- --runs 300 # volle Simulation, Bericht in lab/sim/output/report.md
+./scripts/install-godot.sh          # Godot 4.7.2 nach ~/.local/bin/godot
+godot --headless --path game --script res://tests/run_tests.gd   # Godot-Tests
+./scripts/build-web.sh              # Web-Export nach build/web/
+```
+
+## Architekturregeln
+
+- Das Labor ist die Referenz. Eine Regel entsteht dort, wird getestet und gemessen und erst dann nach `game/core/` portiert (ADR 0003).
+- Alles in der Spiellogik ist deterministisch. Zufall nur über den seedbaren RNG (`lab/src/rng.js`, `game/core/rng.gd`). Keine Systemzeit, kein `Math.random`, kein `randi()`.
+- Keine Rechenoperationen, die zwischen JavaScript und GDScript abweichen können: keine Potenzen, Logarithmen oder Exponentialfunktionen in der Spiellogik. Kurven als Tabellen.
+- Golden-Vektoren speichern Kommazahlen als exakte Ganzzahlen, weil JSON-Parser die letzten Bits unterschiedlich lesen.
+- `game/core/` kennt keine Nodes und keine Zeit. Die Oberfläche zeigt an und leitet Eingaben weiter, sie rechnet keine Regeln.
+- Nichts darf den Web-Export brechen: keine Threads, keine GDExtensions, kein C# (ADR 0002).
+- Jede Mechanik wird in der Simulation gemessen, bevor sie in die Oberfläche kommt.
+- Oberflächenänderungen werden vor dem Merge im emulierten Handy-Browser geprüft (Agent `playtest`).
+
+## Git-Workflow
+
+- `main` ist der Standard-Branch und wird nie direkt beschrieben. Jede Änderung läuft über einen Branch und einen PR gegen `main` (ADR 0005).
+- Claude erstellt den PR und mergt ihn selbst per Squash, sobald die CI grün ist. Der Nutzer liest mit.
+- Jeder Push auf `main` deployt auf den vServer: https://uhrturm-62-83-23-90.sslip.io (ADR 0004, `deploy/README.md`).
+- Kleine Commits, Nachrichten auf Englisch. Tests gehören in denselben Commit wie das Feature.
+- Der Commit-Hook blockiert Commits, solange Labor- oder Godot-Tests rot sind.
+- Agenten in `.claude/agents/`: Regeln und Simulation an `lab-dev`, Spiel und Oberfläche an `godot-dev`, Zahlen an `balance`, Inhalte an `content`, Prüfung auf dem Handy an `playtest`.
+
+## Autonomie
+
+- Claude entscheidet alles innerhalb des Design-Dokuments selbst und dokumentiert es im Cockpit-Verlauf.
+- Gefragt wird nur, wenn eine Grundentscheidung aus einem ADR kippen müsste oder eine Designfrage offen ist. Die Frage kommt ins Cockpit, die Arbeit geht an anderer Stelle weiter.
+
+## Cockpit (Artefakt)
+
+Der Nutzer verfolgt die Entwicklung mobil über das Cockpit: https://claude.ai/artifact/NLLit2ZxYBEUZgYWUtR1JT
+
+Es ist eine Seite mit Datenbank (`ArtifactData`). Pflicht nach jedem Arbeitsschritt:
+
+- **Zu Beginn jeder Session**: `questions` mit `status == answered` und `claudeAck != true` lesen, umsetzen, dann `claudeAck: true` setzen. Ebenso `ideas` mit neuer `vote` und `claudeAck == false`.
+- **Läuft gerade**: `tasks` mit `title`, `status` (running | blocked | done), `startedAt`, `updatedAt`, `note`, `steps` (`label`, `done`) aktuell halten.
+- **Verlauf**: Eintrag in `log` (`ts`, `kind`: commit | pr | merge | deploy | decision | note, `title`, `body`, optional `url`). Ids sortierbar: `JJJJMMTT-HHMM-stichwort`.
+- **Meilensteine**: `milestones/M0..M8` mit `status` (done | active | planned) und kurzer `note`.
+- **Fragen**: Entscheidungen des Nutzers als Dokument in `questions` (`order`, `area`, `title`, `context`, `recommendation`, `options`, `status: open`). Nicht im Chat fragen, wenn es im Cockpit beantwortet werden kann.
+- **Simulation**: Jede aussagekräftige Messung als Dokument in `sims` (`ts`, `area`, `title`, `summary`, `columns`, `rows`, optional `note`, `cmd`, `url`). Zahlen als Text mit deutschem Komma.
+- **meta/project**: `branch`, `lastCommit`, `openPr`, `serverUrl`, `serverLive`, `build`, `updatedAt` nach jedem Merge und Deploy aktualisieren.
+- Agenten haben keinen Cockpit-Zugriff. Claude überträgt ihre Ergebnisse.
