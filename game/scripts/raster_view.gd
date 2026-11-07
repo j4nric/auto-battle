@@ -69,12 +69,13 @@ func _build_ui() -> void:
 	col.add_child(head)
 
 	hint_label = UhrStyle.label("", 14, UhrStyle.TEXT)
-	hint_label.custom_minimum_size.y = 40
+	hint_label.custom_minimum_size.y = 50
 	col.add_child(hint_label)
 
 	grid = GridView.new()
 	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	grid.cell_tapped.connect(_on_cell_tapped)
+	grid.set_drag_forwarding(_grid_drag, _grid_can_drop, _grid_drop)
 	col.add_child(grid)
 
 	cells_label = UhrStyle.label("", 12, UhrStyle.MUTED, false)
@@ -118,6 +119,7 @@ func _refresh() -> void:
 			_render_alloy()
 		"over":
 			_render_over()
+	_update_preview()
 
 
 func _next_growth_hour() -> int:
@@ -146,12 +148,10 @@ func _render_shop() -> void:
 			hint_label.text = "Passt dort nicht. Tippe auf ein anderes Feld oder drehe den Raum."
 	else:
 		var last := _last_fight_text()
-		hint_label.text = (last + " " if last != "" else "") + "Tippe auf ein Angebot, dann auf ein Feld im Turm. Tippe auf einen Raum, um ihn umzubauen."
+		hint_label.text = (last + " " if last != "" else "") + "Ziehe ein Angebot in den Turm oder tippe es an. Räume im Turm kannst du ziehen oder antippen."
 
-	var cards := GridContainer.new()
-	cards.columns = mini(3, maxi(1, run.offers.size()))
-	cards.add_theme_constant_override("h_separation", 6)
-	cards.add_theme_constant_override("v_separation", 6)
+	var cards := VBoxContainer.new()
+	cards.add_theme_constant_override("separation", 5)
 	for i in run.offers.size():
 		cards.add_child(_offer_card(i))
 	bottom.add_child(cards)
@@ -186,32 +186,51 @@ func _render_shop() -> void:
 	bottom.add_child(row)
 
 
-func _offer_card(i: int) -> Button:
+## One offer as a full-width row: name, tier, size and price on top, the effect below. Tap to
+## select it, or drag it straight into the tower.
+func _offer_card(i: int) -> Control:
 	var o: Dictionary = run.offers[i]
 	var def := UhrContent.raster_room(o.id)
-	var b := Button.new()
-	b.custom_minimum_size = Vector2(0, 74)
-	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	b.clip_text = true
+	var row := PanelContainer.new()
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.mouse_filter = Control.MOUSE_FILTER_STOP
 	var affordable := int(o.price) <= run.gold
 	var dup := _duplicate_index(o.id) >= 0
 	var n := UhrRasterTower.area(o.id)
-	b.text = "%s\n%s · %d %s\n%d Gold%s" % [def.name, ["I", "II", "III", "IV"][int(o.tier)], n, "Feld" if n == 1 else "Felder", int(o.price), " · im Turm" if dup else ""]
-	# Long names (Quecksilberhemmung) get a smaller font instead of being cut off.
-	b.add_theme_font_size_override("font_size", 13 if str(def.name).length() <= 14 else 11)
-	var sb := UhrStyle.box(UhrStyle.PANEL_LIT if i == selected_offer else UhrStyle.PANEL, 8, 4, UhrStyle.guild_color(def.guild))
+	var sb := UhrStyle.box(UhrStyle.PANEL_LIT if i == selected_offer else UhrStyle.PANEL, 8, 5, UhrStyle.guild_color(def.guild))
+	sb.content_margin_left = 12
+	sb.content_margin_right = 10
+	sb.content_margin_top = 6
+	sb.content_margin_bottom = 6
 	if i == selected_offer:
 		sb.border_width_top = 2
 		sb.border_width_right = 2
 		sb.border_width_bottom = 2
 		sb.border_color = UhrStyle.BRASS
-	for st in ["normal", "hover", "pressed", "focus"]:
-		b.add_theme_stylebox_override(st, sb)
+	row.add_theme_stylebox_override("panel", sb)
 	var fg := UhrStyle.TEXT if affordable else UhrStyle.MUTED
-	for st in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		b.add_theme_color_override(st, fg)
-	b.pressed.connect(_on_offer_tapped.bind(i))
-	return b
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 1)
+	var top := HBoxContainer.new()
+	var name_l := UhrStyle.label("%s %s" % [def.name, ["I", "II", "III", "IV"][int(o.tier)]], 15, fg, false)
+	name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_l.clip_text = true
+	top.add_child(name_l)
+	top.add_child(UhrStyle.label("%d %s · %d Gold%s" % [n, "Feld" if n == 1 else "Felder", int(o.price), " · im Turm" if dup else ""], 13, UhrStyle.BRASS if affordable else UhrStyle.MUTED, false))
+	v.add_child(top)
+	var text_l := UhrStyle.label(str(def.text), 12, UhrStyle.MUTED)
+	text_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(text_l)
+	row.add_child(v)
+	for c in [v, top, name_l, text_l] + top.get_children():
+		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Tap = press and release without a drag in between.
+	row.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT and not ev.pressed:
+			if not get_viewport().gui_is_dragging() and Rect2(Vector2.ZERO, row.size).has_point(ev.position):
+				_on_offer_tapped(i))
+	row.set_drag_forwarding(func(_at: Vector2) -> Variant: return _offer_drag(i), Callable(), Callable())
+	return row
 
 
 func _render_room_actions() -> void:
@@ -400,6 +419,141 @@ func _feedback(a: Dictionary, placed_id: String, fused: bool, grew: bool) -> voi
 			UhrHaptics.buzz(25)
 		"endShop":
 			UhrSound.play("pick")
+
+
+# ------------------------------------------------------------------ drag and drop
+## Drag data: { kind: "offer" | "room", id, rot, dx, dy, i | idx }. dx/dy: the dragged cell
+## relative to the shape's first cell, so the shape stays under the finger.
+func _offer_drag(i: int) -> Variant:
+	if run.phase != "shop" or i >= run.offers.size() or int(run.offers[i].price) > run.gold:
+		return null
+	selected_offer = i
+	selected_room = -1
+	moving = false
+	ghost = {}
+	var rot := 0
+	_drag_preview(run.offers[i].id)
+	return { "kind": "offer", "i": i, "id": run.offers[i].id, "rot": rot, "dx": 0, "dy": 0 }
+
+
+func _grid_drag(at: Vector2) -> Variant:
+	if run.phase != "shop":
+		return null
+	var cell := grid.cell_at(at)
+	if cell.is_empty():
+		return null
+	var idx := grid.room_at(cell[0], cell[1])
+	if idx < 0:
+		return null
+	var r: Dictionary = run.tower.rooms[idx]
+	var first: Array = grid._abs_cells(r)[0]
+	selected_offer = -1
+	selected_room = idx
+	moving = true
+	ghost = {}
+	_drag_preview(r.id)
+	return { "kind": "room", "idx": idx, "id": r.id, "rot": int(r.get("rot", 0)), "dx": cell[0] - first[0], "dy": cell[1] - first[1] }
+
+
+func _drag_preview(id: String) -> void:
+	var def := UhrContent.raster_room(id)
+	var l := UhrStyle.label(def.name, 14, UhrStyle.TEXT, false)
+	var sb := UhrStyle.box(UhrStyle.PANEL_LIT, 6, 4, UhrStyle.guild_color(def.guild))
+	sb.set_content_margin_all(6)
+	l.add_theme_stylebox_override("normal", sb)
+	l.modulate.a = 0.85
+	var holder := Control.new()
+	holder.add_child(l)
+	# Above the finger, so the cell under it stays visible.
+	l.position = Vector2(-40, -70)
+	set_drag_preview(holder)
+
+
+func _grid_can_drop(at: Vector2, data: Variant) -> bool:
+	if typeof(data) != TYPE_DICTIONARY or not data.has("kind"):
+		return false
+	var cell := grid.cell_at(at)
+	if cell.is_empty():
+		ghost = {}
+	else:
+		_set_ghost(data.id, cell[0] - int(data.dx), cell[1] - int(data.dy), int(data.rot))
+	grid.set_ghost(ghost)
+	_update_preview()
+	return true
+
+
+func _grid_drop(_at: Vector2, data: Variant) -> void:
+	if ghost.is_empty() or not ghost.ok:
+		_toast("Passt dort nicht.")
+		_clear_selection()
+		return
+	if data.kind == "room":
+		_confirm_move()
+	else:
+		_confirm_place()
+
+
+func _notification(what: int) -> void:
+	# A drag that ended outside the tower leaves nothing half-done.
+	if what == NOTIFICATION_DRAG_END and run != null and not get_viewport().gui_is_drag_successful():
+		ghost = {}
+		moving = false
+		_refresh()
+
+
+## Outlines the neighbours of the preview (or of the selected room) and tells whether the
+## preview completes a recipe. Reads the tower only; the rules stay in game/core.
+func _update_preview() -> void:
+	var cells: Array = []
+	var skip := -1
+	if not ghost.is_empty():
+		for cc in UhrContent.cells_of(UhrContent.raster_room(ghost.id), int(ghost.rot)):
+			cells.append([int(ghost.x) + cc[0], int(ghost.y) + cc[1]])
+		if moving:
+			skip = selected_room
+	elif selected_room >= 0 and selected_room < run.tower.rooms.size():
+		cells = grid._abs_cells(run.tower.rooms[selected_room])
+		skip = selected_room
+	var near: Array = []
+	for i in run.tower.rooms.size():
+		if i == skip:
+			continue
+		for cc in grid._abs_cells(run.tower.rooms[i]):
+			if near.has(i):
+				break
+			for g in cells:
+				if absi(int(cc[0]) - int(g[0])) + absi(int(cc[1]) - int(g[1])) == 1:
+					near.append(i)
+					break
+	grid.highlight = near
+	var fuses := ""
+	if not ghost.is_empty() and ghost.ok:
+		var t: Variant = null
+		if moving:
+			var rooms: Array = run.tower.rooms.duplicate(true)
+			rooms[selected_room].x = int(ghost.x)
+			rooms[selected_room].y = int(ghost.y)
+			rooms[selected_room].rot = int(ghost.rot)
+			t = UhrRasterTower.with_rooms(run.tower, rooms)
+		elif selected_offer >= 0:
+			t = run.preview_buy(selected_offer, false, int(ghost.x), int(ghost.y), int(ghost.rot))
+		if t != null:
+			var fused: Array = UhrRasterTower.apply_fusions(t).fused
+			if not fused.is_empty():
+				fuses = UhrContent.raster_room(fused[0]).name
+	grid.ghost_fuses = fuses != ""
+	grid.queue_redraw()
+	if not ghost.is_empty():
+		var parts: Array[String] = []
+		if fuses != "":
+			parts.append("Rezept: %s entsteht!" % fuses)
+		elif not ghost.ok:
+			parts.append("Passt dort nicht.")
+		if not near.is_empty():
+			parts.append("Nachbarn: " + ", ".join(near.map(func(i: int) -> String: return UhrContent.raster_room(run.tower.rooms[i].id).name)))
+		if ghost.ok and fuses == "":
+			parts.append("Zum Einbauen nochmal tippen oder loslassen.")
+		hint_label.text = " ".join(parts)
 
 
 func _clear_selection(refresh := true) -> void:
