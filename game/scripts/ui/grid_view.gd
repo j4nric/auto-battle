@@ -10,6 +10,8 @@ signal room_tapped(index: int)
 
 const MAX_ROWS := 8
 const GAP := 3.0
+## Word endings where a long room name may break onto a second line.
+const WORD_PARTS := ["kammer", "gießerei", "glocke", "horst", "lager", "werk", "ofen", "küche", "hemmung", "getriebe", "feder", "turm", "bad", "schleife", "uhr", "seil", "spiel", "hemmung", "stille", "lysator"]
 
 var tower: Dictionary = UhrRasterTower.empty_grid(3)
 var selected := -1
@@ -30,6 +32,12 @@ var _flash := {}
 var _rising := {}
 ## Rooms that just landed: 1.0 at the start of the pop, 0.0 at rest.
 var _land := {}
+## Rows to draw; -1 means the open rows plus one.
+var rows_shown := -1
+## Rooms outlined as neighbours of the ghost or the selected room.
+var highlight: Array = []
+## The ghost would complete a recipe: drawn in brass.
+var ghost_fuses := false
 var shake_offset := Vector2.ZERO:
 	set(v):
 		shake_offset = v
@@ -209,15 +217,17 @@ func set_selected(i: int) -> void:
 	queue_redraw()
 
 
-## Always the full frame of 8 rows: locked rows show how far the tower can still grow and keep
-## both towers in a fight the same size.
+## Rows on screen: the open rows plus one locked row that shows the next growth. A fight sets
+## rows_shown so both towers have the same height.
 func _shown_rows() -> int:
-	return MAX_ROWS
+	if rows_shown > 0:
+		return rows_shown
+	return mini(MAX_ROWS, int(tower.rows) + 1)
 
 
 func cell_size() -> Vector2:
 	var w := size.x / UhrRasterTower.WIDTH
-	var h := minf(w * (1.25 if compact else 0.7), size.y / _shown_rows())
+	var h := minf(w * (2.0 if compact else 1.0), size.y / _shown_rows())
 	return Vector2(w, h)
 
 
@@ -228,23 +238,35 @@ func cell_rect(x: int, y: int) -> Rect2:
 
 
 func _gui_input(event: InputEvent) -> void:
-	var pos := Vector2.ZERO
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		pos = event.position
-	elif event is InputEventScreenTouch and event.pressed:
-		pos = event.position
-	else:
+	# Only mouse buttons: on phones, touches arrive as emulated mouse events too, and handling
+	# both made one tap count twice (preview and confirm at once).
+	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
+	var cell := cell_at(event.position)
+	if cell.is_empty():
+		return
+	accept_event()
+	cell_tapped.emit(cell[0], cell[1])
+	var i := room_at(cell[0], cell[1])
+	if i >= 0:
+		room_tapped.emit(i)
+
+
+## The open cell under a point, or [] outside the tower.
+func cell_at(pos: Vector2) -> Array:
 	var c := cell_size()
-	var x := int(floorf(pos.x / c.x))
+	var x := int(floorf((pos.x - shake_offset.x) / c.x))
 	var y := int(floorf((size.y - pos.y) / c.y))
 	if x >= 0 and x < UhrRasterTower.WIDTH and y >= 0 and y < int(tower.rows):
-		accept_event()
-		cell_tapped.emit(x, y)
-		for i in tower.rooms.size():
-			if _abs_cells(tower.rooms[i]).has([x, y]):
-				room_tapped.emit(i)
-				break
+		return [x, y]
+	return []
+
+
+func room_at(x: int, y: int) -> int:
+	for i in tower.rooms.size():
+		if _abs_cells(tower.rooms[i]).has([x, y]):
+			return i
+	return -1
 
 
 func _notification(what: int) -> void:
@@ -284,18 +306,22 @@ func _draw() -> void:
 		var land: float = _land.get(i, 0.0)
 		if land > 0.0:
 			fill = fill.lerp(col.lightened(0.3), land * 0.7)
-		var border_w := (3.0 if i == selected else 1.5) + land * 4.0
-		_draw_cells(_abs_cells(room), fill, UhrStyle.BRASS if i == selected or land > 0.0 else col, border_w)
+		var border_w := (3.0 if i == selected or highlight.has(i) else 1.5) + land * 4.0
+		var border := UhrStyle.BRASS if i == selected or land > 0.0 else (col.lightened(0.45) if highlight.has(i) else col)
+		if highlight.has(i):
+			fill = fill.lerp(col, 0.25)
+		_draw_cells(_abs_cells(room), fill, border, border_w)
 		var first: Array = _abs_cells(room)[0]
 		var fr := cell_rect(first[0], first[1]).grow(-GAP - (2 if compact else 4))
 		var tier := int(room.tier) if room.get("tier") != null else 0
 		var name: String = def.name
 		# Long names (Quecksilberhemmung) get a smaller font instead of being cut off.
 		var fs := 11 if compact else 13
-		var min_fs := 8 if compact else 9
-		while fs > min_fs and font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > fr.size.x:
-			fs -= 1
-		draw_string(font, fr.position + Vector2(0, fs + 3), name, HORIZONTAL_ALIGNMENT_LEFT, fr.size.x, fs, UhrStyle.TEXT)
+		var lines := _name_lines(font, name, fr.size.x, fs, 9 if compact else 10)
+		fs = int(lines[0])
+		for k in range(1, lines.size()):
+			draw_string(font, fr.position + Vector2(0, fs + 3 + (k - 1) * (fs + 1)), lines[k], HORIZONTAL_ALIGNMENT_LEFT, fr.size.x, fs, UhrStyle.TEXT)
+		var name_h := (lines.size() - 2) * (fs + 1)
 		var sub: String = ["I", "II", "III", "IV"][tier]
 		if not compact and room.get("alloy") != null and room.get("alloy") != "":
 			sub += " · " + str(UhrContent.alloy(room.alloy).name)
@@ -303,15 +329,38 @@ func _draw() -> void:
 			sub += " · %d/%d" % [int(st.counter), int(def.counterMax)]
 		if float(st.get("charge", 0.0)) > 0.0:
 			sub += " · +%d" % int(floorf(float(st.charge) + 0.5))
-		draw_string(font, fr.position + Vector2(0, fs + 17), sub, HORIZONTAL_ALIGNMENT_LEFT, fr.size.x, 10 if compact else 11, UhrStyle.TIER_COLORS[tier])
+		draw_string(font, fr.position + Vector2(0, fs + 17 + name_h), sub, HORIZONTAL_ALIGNMENT_LEFT, fr.size.x, 10 if compact else 11, UhrStyle.TIER_COLORS[tier])
 	# Ghost.
 	if not ghost.is_empty():
 		var cells: Array = []
 		for cc in UhrContent.cells_of(UhrContent.raster_room(ghost.id), int(ghost.rot)):
 			cells.append([int(ghost.x) + cc[0], int(ghost.y) + cc[1]])
-		var tint := UhrStyle.MINE if ghost.ok else UhrStyle.FOE
+		var tint := (UhrStyle.BRASS if ghost_fuses else UhrStyle.MINE) if ghost.ok else UhrStyle.FOE
 		# Opaque fill: semi-transparent cells would darken where they join.
 		_draw_cells(cells, UhrStyle.PANEL.darkened(0.25).lerp(tint, 0.3), tint, 2.5)
+
+
+## Fits a room name into width: shrinks the font down to min_fs, then breaks into two lines
+## (at a space or, for one long word, with a hyphen). Returns [font size, line, line...].
+func _name_lines(font: Font, name: String, width: float, fs: int, min_fs: int) -> Array:
+	var fits := func(t: String, f: int) -> bool: return font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, f).x <= width
+	for f in range(fs, min_fs - 1, -1):
+		if fits.call(name, f):
+			return [f, name]
+	var f := min_fs
+	var sp := name.find(" ")
+	if sp > 0 and fits.call(name.substr(0, sp), f):
+		return [f, name.substr(0, sp), name.substr(sp + 1)]
+	# Prefer the joint of a compound word (Waffen-kammer, Brenn-ofen).
+	var lower := name.to_lower()
+	for part in WORD_PARTS:
+		var at := lower.rfind(part)
+		if at > 2 and at + part.length() == name.length() and fits.call(name.substr(0, at) + "-", f):
+			return [f, name.substr(0, at) + "-", name.substr(at)]
+	var cut := name.length() - 3
+	while cut > 2 and not fits.call(name.substr(0, cut) + "-", f):
+		cut -= 1
+	return [f, name.substr(0, cut) + "-", name.substr(cut)]
 
 
 func _abs_cells(room: Dictionary) -> Array:

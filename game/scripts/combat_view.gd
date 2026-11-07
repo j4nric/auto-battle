@@ -144,6 +144,8 @@ func _build_ui() -> void:
 		if _is_grid():
 			var gv := GridView.new()
 			gv.compact = true
+			# Both towers as tall as the taller one, no empty locked rows above.
+			gv.rows_shown = maxi(int(setup.mine.rows), int(setup.foe.rows))
 			tv = gv
 		else:
 			tv = TowerView.new()
@@ -210,6 +212,9 @@ func _start_fight() -> void:
 		result = UhrCombat.fight(setup.mine, int(setup.hp_mine), setup.foe, int(setup.hp_foe), true)
 	frames = result.frames
 	title_label.text = "Stunde %d · %s" % [int(setup.hour), setup.title]
+	if _is_grid():
+		for side in ["a", "b"]:
+			towers[side].rows_shown = maxi(int(setup.mine.rows), int(setup.foe.rows))
 	towers.a.setup(setup.mine)
 	towers.b.setup(setup.foe)
 	bars.a.max_hp = int(setup.hp_mine)
