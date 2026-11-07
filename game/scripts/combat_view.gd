@@ -66,6 +66,7 @@ class HpBar:
 
 
 func _ready() -> void:
+	UhrSound.warm()
 	if pending.is_empty():
 		pending = UhrScenarios.build(1)
 	setup = pending
@@ -312,27 +313,53 @@ func _apply(fr: Dictionary, animate: float) -> void:
 
 func _show_event(ev: Dictionary) -> void:
 	var tv = towers[ev.side]  # TowerView or GridView
+	var target_side := "b" if ev.side == "a" else "a"
+	var target = towers[target_side]
+	var juicy: bool = tv.has_method("burst")
 	var idx := int(ev.idx)
 	var n := int(ev.get("n", 0))
 	match ev.type:
 		"fire":
 			tv.flash(idx)
+			UhrSound.play("fire", -10.0)
+			if juicy:
+				tv.burst(idx, 4)
 		"strike":
 			tv.flash(idx, true)
 			tv.pop(idx, "Schlag", UhrStyle.BRASS)
+			UhrSound.play("bell", -2.0)
+			UhrHaptics.buzz(30)
+			if juicy:
+				tv.burst(idx, 22, UhrStyle.BRASS)
+				target.shake(6.0)
 		"dmg":
 			if n > 0:
 				tv.pop(idx, str(n), UhrStyle.BRASS)
+				# A hit worth more than 4 % of the target's integrity lands hard.
+				var big := n * 25 > int(bars[target_side].max_hp)
+				UhrSound.play("bighit" if big else "hit", 0.0 if big else -6.0)
+				if big:
+					UhrHaptics.buzz(20)
+				if juicy:
+					target.shake(5.0 if big else 2.0)
 		"shield":
 			if n > 0:
 				tv.pop(idx, "+%d" % n, UhrStyle.SHIELD)
+				UhrSound.play("shield", -8.0)
 		"heal":
 			if n > 0:
 				tv.pop(idx, "+%d" % n, UhrStyle.HEAL)
+				UhrSound.play("heal", -8.0)
 		"burn":
 			tv.pop(idx, "Brand %d" % n, UhrStyle.BURN)
+			UhrSound.play("burn", -8.0)
+			if juicy:
+				tv.burst(idx, 8, UhrStyle.BURN)
 		"poison":
 			tv.pop(idx, "Gift %d" % n, UhrStyle.POISON)
+			UhrSound.play("burn", -10.0)
+			if juicy:
+				tv.burst(idx, 8, UhrStyle.POISON)
 		"rust":
 			tv.pop(idx, "Rost %d" % n, UhrStyle.MUTED)
 		"oil":
@@ -342,6 +369,8 @@ func _show_event(ev: Dictionary) -> void:
 func _show_summary() -> void:
 	var w: String = result.winner
 	var text := "Sieg" if w == "a" else ("Niederlage" if w == "b" else "Unentschieden")
+	UhrSound.play("win" if w == "a" else "lose")
+	UhrHaptics.buzz(60 if w == "a" else 150)
 	var panel := PanelContainer.new()
 	var sb := UhrStyle.box(Color(0.19, 0.17, 0.25), 12, 0)
 	sb.set_content_margin_all(16)

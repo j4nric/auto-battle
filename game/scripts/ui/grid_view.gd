@@ -28,6 +28,12 @@ var _path_cells: Array = []
 var _sparks: Array[Panel] = []
 var _flash := {}
 var _rising := {}
+## Rooms that just landed: 1.0 at the start of the pop, 0.0 at rest.
+var _land := {}
+var shake_offset := Vector2.ZERO:
+	set(v):
+		shake_offset = v
+		queue_redraw()
 
 
 func setup(t: Dictionary) -> void:
@@ -111,6 +117,63 @@ func flash(i: int, strong := false) -> void:
 		queue_redraw())
 
 
+## Sparks flying out of room i, in the room's guild colour.
+func burst(i: int, amount := 10, color := Color()) -> void:
+	if i < 0 or i >= tower.rooms.size():
+		return
+	var cells := _abs_cells(tower.rooms[i])
+	var center := Vector2.ZERO
+	for cc in cells:
+		center += cell_rect(cc[0], cc[1]).get_center()
+	center /= cells.size()
+	if color == Color():
+		color = UhrStyle.guild_color(UhrContent.raster_room(tower.rooms[i].id).guild)
+	burst_at(center, amount, color)
+
+
+func burst_at(pos: Vector2, amount: int, color: Color) -> void:
+	var p := CPUParticles2D.new()
+	p.position = pos
+	p.one_shot = true
+	p.explosiveness = 0.9
+	p.amount = amount
+	p.lifetime = 0.5
+	p.direction = Vector2.UP
+	p.spread = 180.0
+	p.gravity = Vector2(0, 420)
+	p.initial_velocity_min = 70.0
+	p.initial_velocity_max = 170.0
+	p.scale_amount_min = 3.0
+	p.scale_amount_max = 6.0
+	var ramp := Gradient.new()
+	ramp.set_color(0, color.lightened(0.35))
+	ramp.set_color(1, Color(color, 0.0))
+	p.color_ramp = ramp
+	p.z_index = 4
+	add_child(p)
+	p.emitting = true
+	p.finished.connect(p.queue_free)
+
+
+## Shakes the drawing for a moment (rooms and frame; sparks and numbers stay put).
+func shake(strength := 4.0) -> void:
+	var tw := create_tween()
+	for k in 4:
+		var s := strength * (1.0 - k / 4.0)
+		tw.tween_property(self, "shake_offset", Vector2(s if k % 2 == 0 else -s, 0), 0.035)
+	tw.tween_property(self, "shake_offset", Vector2.ZERO, 0.035)
+
+
+## Pops room i in: used when a room is placed or fused in the workshop.
+func land(i: int) -> void:
+	_land[i] = 0.0
+	var tw := create_tween()
+	tw.tween_method(func(v: float) -> void:
+		_land[i] = v
+		queue_redraw(), 1.0, 0.0, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func() -> void: _land.erase(i))
+
+
 ## A small number rising from room i.
 func pop(i: int, text: String, color: Color) -> void:
 	if i < 0 or i >= tower.rooms.size():
@@ -190,6 +253,7 @@ func _notification(what: int) -> void:
 
 
 func _draw() -> void:
+	draw_set_transform(shake_offset)
 	var font := get_theme_default_font()
 	var c := cell_size()
 	var rows := int(tower.rows)
@@ -217,7 +281,11 @@ func _draw() -> void:
 		var st: Dictionary = _states[i] if i < _states.size() else {}
 		if st.get("broken", false):
 			fill = Color(fill, 0.35)
-		_draw_cells(_abs_cells(room), fill, UhrStyle.BRASS if i == selected else col, 3.0 if i == selected else 1.5)
+		var land: float = _land.get(i, 0.0)
+		if land > 0.0:
+			fill = fill.lerp(col.lightened(0.3), land * 0.7)
+		var border_w := (3.0 if i == selected else 1.5) + land * 4.0
+		_draw_cells(_abs_cells(room), fill, UhrStyle.BRASS if i == selected or land > 0.0 else col, border_w)
 		var first: Array = _abs_cells(room)[0]
 		var fr := cell_rect(first[0], first[1]).grow(-GAP - (2 if compact else 4))
 		var tier := int(room.tier) if room.get("tier") != null else 0

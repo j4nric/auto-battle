@@ -18,6 +18,7 @@ var _press_started := -1.0
 
 
 func _ready() -> void:
+	UhrSound.warm()
 	var bg := ColorRect.new()
 	bg.color = UhrStyle.NIGHT
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -76,6 +77,12 @@ func _ready() -> void:
 		grid.add_child(b)
 	col.add_child(grid)
 
+	var toggles := HBoxContainer.new()
+	toggles.add_theme_constant_override("separation", 8)
+	toggles.add_child(_toggle("Klang", "sound", UhrSettings.sound()))
+	toggles.add_child(_toggle("Vibration", "vibration", UhrSettings.vibration()))
+	col.add_child(toggles)
+
 	var rooms_total: int = UhrContent.raster().rooms.size()
 	var info := UhrStyle.label("%s · %d Räume" % [_build_info(), rooms_total], 12, UhrStyle.MUTED)
 	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -88,6 +95,22 @@ func _ready() -> void:
 	add_child(timer)
 	await get_tree().process_frame
 	_light(0)
+
+
+## A settings switch: "Klang an" / "Klang aus".
+func _toggle(title: String, key: String, on: bool) -> Button:
+	var b := UhrStyle.button("%s %s" % [title, "an" if on else "aus"])
+	b.add_theme_font_size_override("font_size", 14)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.pressed.connect(func() -> void:
+		var now: bool = not (UhrSettings.sound() if key == "sound" else UhrSettings.vibration())
+		UhrSettings.set_value(key, now)
+		b.text = "%s %s" % [title, "an" if now else "aus"]
+		if key == "sound":
+			UhrSound.play("pick")
+		else:
+			UhrHaptics.buzz(30))
+	return b
 
 
 func _start_run(seed: int) -> void:
