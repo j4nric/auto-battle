@@ -32,6 +32,8 @@ var _flash := {}
 var _rising := {}
 ## Rooms that just landed: 1.0 at the start of the pop, 0.0 at rest.
 var _land := {}
+## A row that just opened glows: row index -> strength 1..0.
+var _row_glow := {}
 ## Rows to draw; -1 means the open rows plus one.
 var rows_shown := -1
 ## Rooms outlined as neighbours of the ghost or the selected room.
@@ -172,6 +174,16 @@ func shake(strength := 4.0) -> void:
 	tw.tween_property(self, "shake_offset", Vector2.ZERO, 0.035)
 
 
+## Lets a freshly opened row glow up and fade (the tower grew).
+func glow_row(y: int) -> void:
+	_row_glow[y] = 1.0
+	var tw := create_tween()
+	tw.tween_method(func(v: float) -> void:
+		_row_glow[y] = v
+		queue_redraw(), 1.0, 0.0, 1.2).set_delay(0.2)
+	tw.tween_callback(func() -> void: _row_glow.erase(y))
+
+
 ## Pops room i in: used when a room is placed or fused in the workshop.
 func land(i: int) -> void:
 	_land[i] = 0.0
@@ -284,7 +296,7 @@ func _draw() -> void:
 		for x in UhrRasterTower.WIDTH:
 			var r := cell_rect(x, y).grow(-GAP)
 			if y < rows:
-				draw_rect(r, UhrStyle.PANEL.darkened(0.25))
+				draw_rect(r, UhrStyle.PANEL.darkened(0.25).lerp(UhrStyle.BRASS, 0.45 * float(_row_glow.get(y, 0.0))))
 				var arrow := "›" if y % 2 == 0 else "‹"
 				draw_string(font, r.position + Vector2(0, r.size.y * 0.5 + 6), arrow, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, 14 if compact else 18, UhrStyle.LINE.lightened(0.15))
 			else:
