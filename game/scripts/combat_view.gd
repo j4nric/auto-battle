@@ -386,9 +386,19 @@ func _show_summary() -> void:
 	col.add_theme_constant_override("separation", 6)
 	col.add_child(UhrStyle.label(text, 28, UhrStyle.MINE if w == "a" else (UhrStyle.FOE if w == "b" else UhrStyle.BRASS)))
 	col.add_child(UhrStyle.label("%d Takte, %.0f Sekunden" % [int(result.ticks), result.ticks * TICK], 13, UhrStyle.MUTED))
+	# Why: both towers' totals side by side, then the rooms that carried the fight.
+	var mine := _totals(result.statsA)
+	col.add_child(UhrStyle.label("Du: " + _totals_text(mine), 13, UhrStyle.MINE))
+	if result.has("statsB"):
+		var theirs := _totals(result.statsB)
+		col.add_child(UhrStyle.label("Gegner: " + _totals_text(theirs), 13, UhrStyle.FOE))
 	col.add_child(UhrStyle.label("Deine stärksten Räume", 14, UhrStyle.TEXT))
 	for line in _top_rooms(3):
 		col.add_child(UhrStyle.label(line, 13, UhrStyle.MUTED))
+	if result.has("statsB") and not setup.foe.rooms.is_empty():
+		col.add_child(UhrStyle.label("Stärkster Raum des Gegners", 14, UhrStyle.TEXT))
+		for line in _top_rooms(1, result.statsB, setup.foe):
+			col.add_child(UhrStyle.label(line, 13, UhrStyle.MUTED))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	var again := UhrStyle.button("Nochmal")
@@ -404,15 +414,38 @@ func _show_summary() -> void:
 	overlay = CenterContainer.new()
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Above the sparks and rising numbers of the towers.
+	overlay.z_index = 10
 	panel.custom_minimum_size.x = 320
 	overlay.add_child(panel)
 	add_child(overlay)
 
 
+## Sums of a tower's room stats: [damage, shield, heal, burn, poison, activations].
+func _totals(stats: Array) -> Array:
+	var t := [0, 0, 0, 0, 0, 0]
+	for st in stats:
+		for k in 6:
+			t[k] += int(st[k])
+	return t
+
+
+func _totals_text(t: Array) -> String:
+	var parts: Array[String] = ["%d Schaden" % t[0]]
+	if t[3] > 0: parts.append("%d Brand" % t[3])
+	if t[4] > 0: parts.append("%d Gift" % t[4])
+	if t[1] > 0: parts.append("%d Schild" % t[1])
+	if t[2] > 0: parts.append("%d Heilung" % t[2])
+	return " · ".join(parts)
+
+
 ## Same weighting as the lab report: burn and poison keep hurting, shield and heal count less.
-func _top_rooms(k: int) -> Array[String]:
+func _top_rooms(k: int, stats: Array = [], tower: Dictionary = {}) -> Array[String]:
+	if stats.is_empty():
+		stats = result.statsA
+	if tower.is_empty():
+		tower = setup.mine
 	var rows: Array = []
-	var stats: Array = result.statsA
 	for i in stats.size():
 		var s: Array = stats[i]
 		var v := float(s[0]) + float(s[3]) * 2.5 + float(s[4]) * 8.0 + float(s[1]) * 0.6 + float(s[2]) * 0.6
@@ -429,7 +462,7 @@ func _top_rooms(k: int) -> Array[String]:
 		if s[1] > 0: parts.append("%d Schild" % s[1])
 		if s[2] > 0: parts.append("%d Heilung" % s[2])
 		if parts.is_empty(): parts.append("%d× ausgelöst" % s[5])
-		out.append("%s: %s" % [_def(setup.mine.rooms[i].id).name, ", ".join(parts)])
+		out.append("%s: %s" % [_def(tower.rooms[i].id).name, ", ".join(parts)])
 	return out
 
 
