@@ -282,7 +282,7 @@ func _resolve_omen(omen: Dictionary, record: bool) -> void:
 	var entry := {
 		"hour": hour, "omen": omen.id, "opponent": opp.name, "won": won, "ticks": res.ticks,
 		"tower": tower, "oppTower": opp.tower, "hp": player_hp(hour), "oppHp": opp.hp,
-		"winner": res.winner, "statsA": res.statsA, "frames": res.frames,
+		"winner": res.winner, "statsA": res.statsA, "statsB": res.statsB, "frames": res.frames,
 	}
 	fights.append(entry)
 	if won:
