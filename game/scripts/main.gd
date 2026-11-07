@@ -1,13 +1,13 @@
 extends Control
-## Start screen: title, a small idle tower with the climbing spark, the way into a fight and the
-## build info. A long press on the title opens the debug menu (seed, hour, scenario).
+## Start screen: title, a small idle grid tower with the spark walking its snake path, the way
+## into a run or a fight and the build info. A long press on the title opens the debug menu (seed, hour, scenario).
 
 const TICK := 0.6
 const LONG_PRESS := 0.7
-## Room ids from the shared content file; names and guild colours come from res://data/content.json.
-const FLOORS := ["waffenkammer", "schmiede", "kleineGlocke", "feder", "brennofen", "echo", "bollwerk", "laeutwerk"]
+## The idle tower is a showcase (UhrScenarios), shown with the rows it has at that hour.
+const DECO_SHOWCASE := 1
 
-var floor_panels: Array[PanelContainer] = []
+var deco: GridView
 var spark := 0
 var debug_panel: PanelContainer
 var debug_seed := 1
@@ -41,16 +41,11 @@ func _ready() -> void:
 	col.add_child(title)
 	col.add_child(UhrStyle.label("Der Funke steigt. Um Mitternacht schlägt der Turm.", 15, UhrStyle.MUTED))
 
-	var tower := VBoxContainer.new()
-	tower.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	tower.alignment = BoxContainer.ALIGNMENT_END
-	tower.add_theme_constant_override("separation", 3)
-	col.add_child(tower)
-	# Floor 0 is the foundation and sits at the bottom, so add from the top down.
-	for i in range(FLOORS.size() - 1, -1, -1):
-		var p := _floor_panel(UhrContent.room(FLOORS[i]))
-		tower.add_child(p)
-		floor_panels.push_front(p)
+	deco = GridView.new()
+	deco.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	deco.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(deco)
+	deco.setup(UhrScenarios.showcase_tower(DECO_SHOWCASE))
 
 	# The run is the 3-wide grid (ADR 0008). Saves of the old single column are no longer offered.
 	var saved := UhrRasterSession.saved_summary()
@@ -81,7 +76,7 @@ func _ready() -> void:
 		grid.add_child(b)
 	col.add_child(grid)
 
-	var rooms_total: int = UhrContent.data().rooms.size()
+	var rooms_total: int = UhrContent.raster().rooms.size()
 	var info := UhrStyle.label("%s · %d Räume" % [_build_info(), rooms_total], 12, UhrStyle.MUTED)
 	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(info)
@@ -91,6 +86,7 @@ func _ready() -> void:
 	timer.autostart = true
 	timer.timeout.connect(_on_tick)
 	add_child(timer)
+	await get_tree().process_frame
 	_light(0)
 
 
@@ -114,23 +110,22 @@ func _open_fight(seed: int, showcase: int, hour: int) -> void:
 
 
 func _on_tick() -> void:
-	spark = (spark + 1) % floor_panels.size()
+	var steps: int = deco._path_cells.size()
+	if steps == 0:
+		return
+	spark = (spark + 1) % steps
 	_light(spark)
 
 
+## Moves the spark to a step of the path and lights the room it enters.
 func _light(index: int) -> void:
-	for i in floor_panels.size():
-		var box: StyleBoxFlat = floor_panels[i].get_theme_stylebox("panel")
-		box.bg_color = UhrStyle.PANEL_LIT if i == index else UhrStyle.PANEL
-		box.border_width_left = 8 if i == index else 4
-
-
-func _floor_panel(room: Dictionary) -> PanelContainer:
-	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", UhrStyle.box(UhrStyle.PANEL, 6, 4, UhrStyle.guild_color(room.guild)))
-	p.custom_minimum_size.y = 26
-	p.add_child(UhrStyle.label(room.name, 13, UhrStyle.TEXT, false))
-	return p
+	deco.apply_frame({ "rooms": [], "sparks": [index] }, TICK * 0.8 if index > 0 else 0.0)
+	if deco._path_cells.is_empty():
+		return
+	var cell: Array = deco._path_cells[index]
+	var owner: int = UhrRasterTower._occupancy(deco.tower)[int(cell[1]) * UhrRasterTower.WIDTH + int(cell[0])]
+	if owner >= 0:
+		deco.flash(owner)
 
 
 ## build_info.json is written by CI right before the export; locally it is missing.
