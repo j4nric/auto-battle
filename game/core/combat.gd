@@ -4,7 +4,10 @@ extends RefCounted
 ## the contract. Every floating point expression keeps the lab's order of operations, because a
 ## different order can change the last bits and with them a rounding decision.
 ##
-## Towers are Dictionaries: { rooms: [{ id, tier, alloy }], maxFloors } from the foundation up.
+## Towers are Dictionaries: { rooms: [{ id, tier, alloy }], maxFloors } from the foundation up,
+## or grid towers (ADR 0008): { kind: "grid", width, rows, rooms: [{ id, tier, alloy, x, y, rot }] }.
+## The spark's path, each room's neighbours and its predecessor come from a layout, so the single
+## column is just the width-1 case.
 
 const DECAY_START := 30
 const MAX_TICKS := 200
@@ -29,6 +32,11 @@ class RoomInst:
 	var spawned := false
 	# dmg, shield, heal, burn, poison, activations
 	var stats := [0, 0, 0, 0, 0, 0]
+	## [[source room index, "above" | "below"]]: neighbours whose auras reach this room, with this
+	## room's position relative to them. Indices, not references: RefCounted cycles would leak.
+	var nbrs: Array = []
+	## Index of the room the spark fires before this one ("the room below" in a column), or -1.
+	var prev := -1
 
 	func has_any_tag(tags: Array) -> bool:
 		for t in tags:
@@ -50,7 +58,10 @@ class Fighter:
 	var rooms: Array[RoomInst] = []
 	var hp: int
 	var max_hp: int
-	var empty_cost: float
+	## Path steps [room index or -1, cells (tempo cost), fires on this step].
+	var path: Array = []
+	## Tempo per tick multiplier: the tower width.
+	var speed := 1
 	var shield := 0
 	var burn := 0
 	var poison := 0
@@ -94,21 +105,23 @@ static func _make_fighter(side: String, tower: Dictionary, hp: int) -> Fighter:
 	f.side = side
 	f.hp = hp
 	f.max_hp = hp
-	var used := 0
+	var grid: bool = tower.get("kind", "") == "grid"
 	var i := 0
 	for r in tower.rooms:
 		var inst := RoomInst.new()
 		inst.id = r.id
-		inst.def = UhrContent.room(r.id)
+		inst.def = UhrContent.raster_room(r.id) if grid else UhrContent.room(r.id)
 		inst.tier = int(r.get("tier", 0)) if r.get("tier") != null else 0
 		var alloy_id: Variant = r.get("alloy")
 		inst.alloy = UhrContent.alloy(alloy_id) if alloy_id != null and alloy_id != "" else {}
 		inst.idx = i
 		f.rooms.append(inst)
-		used += int(inst.def.height)
 		i += 1
-	var max_floors: int = int(tower.maxFloors) if tower.get("maxFloors") != null else used
-	f.empty_cost = maxi(0, max_floors - used) * empty_floor_cost
+	if grid:
+		f.path = _grid_layout(tower, f.rooms)
+		f.speed = int(tower.width)
+	else:
+		f.path = _column_layout(tower, f.rooms)
 	if not f.rooms.is_empty():
 		f.sparks.append(Spark.new())
 	return f
@@ -128,8 +141,87 @@ func _log(side: String, idx: int, type: String, n: Variant = null) -> void:
 
 
 static func _below(f: Fighter, room: RoomInst) -> RoomInst:
-	var n := f.rooms.size()
-	return f.rooms[(room.idx - 1 + n) % n] if n > 1 else null
+	return f.rooms[room.prev] if room.prev >= 0 else null
+
+
+## Single column: rooms from the foundation up, then the empty floors. Top and foundation are
+## neighbours in the loop.
+static func _column_layout(tower: Dictionary, rooms: Array[RoomInst]) -> Array:
+	var n := rooms.size()
+	var used := 0
+	for r in rooms:
+		used += int(r.def.height)
+		if n < 2:
+			continue
+		var up := rooms[(r.idx + 1) % n]
+		var down := rooms[(r.idx - 1 + n) % n]
+		r.nbrs = [[up.idx, "below"]] if up == down else [[up.idx, "below"], [down.idx, "above"]]
+		r.prev = down.idx
+	var path: Array = []
+	for r in rooms:
+		path.append([r.idx, float(r.def.height), true])
+	var max_floors: int = int(tower.maxFloors) if tower.get("maxFloors") != null else used
+	path.append([-1, maxi(0, max_floors - used) * empty_floor_cost, false])
+	return path
+
+
+## Cells in the order the spark visits them: row by row from the bottom, alternating direction.
+static func snake_order(width: int, rows: int) -> Array:
+	var out: Array = []
+	for y in rows:
+		for k in width:
+			out.append([k if y % 2 == 0 else width - 1 - k, y])
+	return out
+
+
+## Grid (ADR 0008), port of gridLayout in the lab.
+static func _grid_layout(tower: Dictionary, rooms: Array[RoomInst]) -> Array:
+	var w := int(tower.width)
+	var h := int(tower.rows)
+	var owner: Array[int] = []
+	owner.resize(w * h)
+	owner.fill(-1)
+	for ri in rooms.size():
+		var r: Dictionary = tower.rooms[ri]
+		var rot := int(r.get("rot", 0)) if r.get("rot") != null else 0
+		for c in UhrContent.cells_of(rooms[ri].def, rot):
+			owner[(int(r.y) + c[1]) * w + int(r.x) + c[0]] = ri
+	var at := func(x: int, y: int) -> int:
+		return -1 if x < 0 or y < 0 or x >= w or y >= h else owner[y * w + x]
+	var path: Array = []
+	for cell in snake_order(w, h):
+		var o: int = at.call(cell[0], cell[1])
+		var cost := empty_floor_cost if o < 0 else 1.0
+		if not path.is_empty() and path[-1][0] == o:
+			path[-1][1] += cost
+		else:
+			path.append([o, cost, false])
+	var order: Array[int] = []
+	for st in path:
+		if st[0] >= 0 and not order.has(st[0]):
+			order.append(st[0])
+			st[2] = true
+	if order.size() > 1:
+		for k in order.size():
+			rooms[order[k]].prev = order[(k - 1 + order.size()) % order.size()]
+	for ti in rooms.size():
+		var rel := {}
+		for y in h:
+			for x in w:
+				if at.call(x, y) != ti:
+					continue
+				for d in [[0, -1], [0, 1], [-1, 0], [1, 0]]:
+					var si: int = at.call(x + d[0], y + d[1])
+					if si < 0 or si == ti:
+						continue
+					if d[1] == -1:
+						rel[si] = "above"
+					elif not rel.has(si):
+						rel[si] = "below"
+		var keys := rel.keys()
+		keys.sort()
+		rooms[ti].nbrs = keys.map(func(si: int) -> Array: return [si, rel[si]])
+	return path
 
 
 static func _count_tag(f: Fighter, tag: String) -> int:
@@ -162,15 +254,9 @@ static func _eval_terms(terms: Array, me: Fighter, foe: Fighter, room: RoomInst,
 
 
 func _aura_mult(f: Fighter, room: RoomInst) -> float:
-	var n := f.rooms.size()
-	if n < 2:
-		return 1.0
-	var up := f.rooms[(room.idx + 1) % n]
-	var down := f.rooms[(room.idx - 1 + n) % n]
-	var pairs := [[up, "below"]] if up == down else [[up, "below"], [down, "above"]]
 	var m := 1.0
-	for pair in pairs:
-		var src: RoomInst = pair[0]
+	for pair in room.nbrs:
+		var src: RoomInst = f.rooms[pair[0]]
 		var rel: String = pair[1]
 		var aura: Variant = src.def.get("aura")
 		if src.broken or aura == null:
@@ -183,8 +269,6 @@ func _aura_mult(f: Fighter, room: RoomInst) -> float:
 	return m
 
 
-static func _room_cost(room: RoomInst) -> float:
-	return float(room.def.height) * float(room.alloy.get("costMult", 1.0))
 
 
 func _hp_damage(target: Fighter, amount: int) -> void:
@@ -353,28 +437,28 @@ func _step_fighter(f: Fighter) -> void:
 		if spark.fresh:
 			spark.fresh = false
 			continue
-		spark.meter += gain
+		spark.meter += gain * f.speed
 		var guard := 0
-		while guard < 24:
+		while guard < 24 * f.speed:
 			guard += 1
-			if spark.pos >= f.rooms.size():
-				# Empty floors above the topmost room.
-				if spark.meter < f.empty_cost:
-					break
-				spark.meter -= f.empty_cost
-				spark.pos = 0
-				spark.loops += 1
-				_emit(f, "loopEvent", 1, spark)
-				continue
-			var room := f.rooms[spark.pos]
-			var cost := maxf(0.0, _room_cost(room) - spark.discount)
+			var step: Array = f.path[spark.pos]
+			var room: RoomInst = f.rooms[step[0]] if step[0] >= 0 else null
+			var cost: float = step[1]
+			if room != null:
+				cost = maxf(0.0, step[1] * float(room.alloy.get("costMult", 1.0)) - spark.discount)
 			if spark.meter < cost:
 				break
 			spark.meter -= cost
-			spark.discount = 0.0
-			activate(f, room, 0, spark)
+			if room != null:
+				spark.discount = 0.0
+				if step[2]:
+					activate(f, room, 0, spark)
 			spark.pos += 1
-			if f.hp <= 0 or foe_of(f).hp <= 0:
+			if spark.pos >= f.path.size():
+				spark.pos = 0
+				spark.loops += 1
+				_emit(f, "loopEvent", 1, spark)
+			if room != null and (f.hp <= 0 or foe_of(f).hp <= 0):
 				return
 
 

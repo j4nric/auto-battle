@@ -82,3 +82,17 @@ Die Gegner sind rivalisierende Uhrmacher:innen, eine Person je Zunft (`rivals`: 
 ## Neue Op oder neuer Term
 
 Beides ist eine Regeländerung: erst im Labor (`lab/src/engine/combat.ts`), dann im Port (`game/core/combat.gd`), dann hier dokumentieren. Golden-Vektoren neu erzeugen und einen Fall ergänzen, der die neue Op benutzt.
+
+## Raster (ADR 0008)
+
+`game/data/raster.json` enthält die Räume für den 3 Felder breiten Turm. Gegenüber `content.json`
+kommt ein Feld dazu:
+
+| Feld | Bedeutung |
+|---|---|
+| `shape` | Felder `[x, y]` relativ zum Ursprung, `y` zeigt nach oben. `height` ist die Zahl der Felder und damit die Tempo-Kosten. Ohne `shape` ist ein Raum eine Spalte aus `height` Feldern. |
+
+Platzierte Räume tragen `x`, `y` und `rot` (Vierteldrehungen im Uhrzeigersinn). Im Raster gilt:
+`rel: "above"` wirkt auf Räume, die direkt über einem Feld der Quelle liegen, `rel: "any"` auf alle
+Räume mit gemeinsamer Kante. „Der Raum darunter“ (`retrigger`, `timesIfBelowTag`, Kupfer) ist der
+Raum davor auf dem Funkenweg. Rezepte sind Muster: `pattern[1]` liegt direkt über `pattern[0]`.

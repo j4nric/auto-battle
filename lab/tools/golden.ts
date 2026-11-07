@@ -3,7 +3,9 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { Rng, hashSeed } from '../src/rng.ts';
 import { ROOMS, ALLOY_IDS } from '../src/content.ts';
-import { fight, type Tower } from '../src/engine/combat.ts';
+import { fight, type Tower, type GridTower } from '../src/engine/combat.ts';
+import { RASTER_ROOMS } from '../src/raster/content.ts';
+import * as G from '../src/raster/tower.ts';
 import { applyFusions, BASE_FLOORS } from '../src/engine/tower.ts';
 import { HP_TABLE, createRun, act, playRun, type Run, type Action } from '../src/run/run.ts';
 import { TinkerBot } from '../src/run/bots.ts';
@@ -113,6 +115,56 @@ write('combat.json', {
   fights,
 });
 console.log(`tests/golden/combat.json: ${fights.length} fights`);
+
+// ------------------------------------------------------------------ raster (ADR 0008)
+// Grid towers: snake path, neighbours by shared edges, shapes and rotations.
+{
+  const grng = new Rng(hashSeed('golden', 'raster'));
+  const ids = Object.keys(RASTER_ROOMS);
+  const randomGrid = (rows: number, fill: number): GridTower => {
+    let t = G.emptyGrid(rows);
+    for (let k = 0; k < 30 && G.usedCells(t) < fill; k++) {
+      const id = grng.pick(ids);
+      const spots = G.allSpots(t, id);
+      if (!spots.length) continue;
+      const s = grng.pick(spots);
+      t = G.place(t, { id, tier: grng.int(4), alloy: grng.chance(0.2) ? grng.pick(ALLOY_IDS) : null, ...s });
+    }
+    return t;
+  };
+  const dummyGrid: GridTower = { kind: 'grid', width: 3, rows: 3, rooms: [{ id: 'bollwerk', tier: 0, alloy: null, x: 0, y: 0, rot: 0 }] };
+  const rcases: Array<{ name: string; a: GridTower; hpA: number; b: GridTower; hpB: number }> = [];
+  for (const id of ids) {
+    rcases.push({ name: `raster-room:${id}`, a: { kind: 'grid', width: 3, rows: 3, rooms: [{ id, tier: 1, alloy: null, x: 0, y: 0, rot: 0 }, { id: 'waffenkammer', tier: 0, alloy: null, x: 2, y: 2, rot: 0 }] }, hpA: 1836, b: dummyGrid, hpB: 1836 });
+  }
+  for (let i = 0; i < 80; i++) {
+    const hour = 1 + grng.int(12);
+    const rows = G.rowsFor(hour);
+    rcases.push({
+      name: `raster-random:${i}`,
+      a: randomGrid(rows, 2 + grng.int(rows * 3 - 1)),
+      hpA: HP_TABLE[hour] * 2,
+      b: randomGrid(rows, 2 + grng.int(rows * 3 - 1)),
+      hpB: Math.floor(HP_TABLE[hour] * 2 * (0.8 + grng.int(5) / 10)),
+    });
+  }
+  const rfights = rcases.map((c) => {
+    const r = fight(c.a, c.hpA, c.b, c.hpB, { record: true });
+    const stats = (side: 'a' | 'b') => r.roomStats[side].map((s) => [s.dmg, s.shield, s.heal, s.burn, s.poison, s.activations]);
+    return {
+      name: c.name, a: c.a, hpA: c.hpA, b: c.b, hpB: c.hpB, winner: r.winner, ticks: r.ticks,
+      trace: r.frames!.slice(1).map((f) => [f.a.hp, f.a.shield, f.b.hp, f.b.shield]),
+      statsA: stats('a'), statsB: stats('b'),
+    };
+  });
+  const rfusions = Array.from({ length: 40 }, () => {
+    const t = randomGrid(3 + grng.int(6), 30);
+    const res = G.applyFusions(t);
+    return { input: t, output: res.tower, fused: res.fused };
+  });
+  write('raster.json', { generator: 'lab/tools/golden.ts', statsColumns: ['dmg', 'shield', 'heal', 'burn', 'poison', 'activations'], fights: rfights, fusions: rfusions });
+  console.log(`tests/golden/raster.json: ${rfights.length} fights, ${rfusions.length} fusion cases`);
+}
 
 // ------------------------------------------------------------------ fusions
 {
