@@ -192,7 +192,8 @@ func _offer_card(i: int) -> Button:
 	var dup := _duplicate_index(o.id) >= 0
 	var n := UhrRasterTower.area(o.id)
 	b.text = "%s\n%s · %d %s\n%d Gold%s" % [def.name, ["I", "II", "III", "IV"][int(o.tier)], n, "Feld" if n == 1 else "Felder", int(o.price), " · im Turm" if dup else ""]
-	b.add_theme_font_size_override("font_size", 13)
+	# Long names (Quecksilberhemmung) get a smaller font instead of being cut off.
+	b.add_theme_font_size_override("font_size", 13 if str(def.name).length() <= 14 else 11)
 	var sb := UhrStyle.box(UhrStyle.PANEL_LIT if i == selected_offer else UhrStyle.PANEL, 8, 4, UhrStyle.guild_color(def.guild))
 	if i == selected_offer:
 		sb.border_width_top = 2
@@ -276,11 +277,7 @@ func _render_omens() -> void:
 			b.add_theme_stylebox_override(st, sb)
 		for st in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 			b.add_theme_color_override(st, UhrStyle.TEXT)
-		b.pressed.connect(func() -> void:
-			if _act({ "t": "omen", "id": o.id }):
-				var t := _last_fight_text()
-				if t != "":
-					_toast(t))
+		b.pressed.connect(_choose_omen.bind(o.id))
 		bottom.add_child(b)
 
 
@@ -307,6 +304,26 @@ func _last_fight_text() -> String:
 			return ""
 		return "%s gegen %s nach %d Takten." % ["Sieg" if f.won else "Niederlage", f.opponent, int(f.ticks)]
 	return ""
+
+
+## Resolves the omen with a recorded fight and shows it in the combat view (grid mode).
+func _choose_omen(id: String) -> void:
+	_clear_selection(false)
+	if not UhrRasterSession.act({ "t": "omen", "id": id }, true):
+		_toast("Das geht gerade nicht.")
+		return
+	var f: Dictionary = run.fights[run.fights.size() - 1]
+	if f.get("skipped", false):
+		_toast("Der Händler zieht weiter. Die nächste Werkstatt ist größer.")
+		_refresh()
+		return
+	CombatView.pending = {
+		"mode": "run", "return_scene": "res://scenes/raster.tscn",
+		"title": UhrRun._omen(f.omen).get("name", ""), "hour": int(f.hour), "seed": run.seed,
+		"mine": f.tower, "foe": f.oppTower, "hp_mine": int(f.hp), "hp_foe": int(f.oppHp),
+		"foe_name": f.opponent, "result": f,
+	}
+	get_tree().change_scene_to_file("res://scenes/combat.tscn")
 
 
 # ------------------------------------------------------------------ input

@@ -482,7 +482,7 @@ func _snapshot() -> void:
 	var s := func(f: Fighter) -> Dictionary:
 		return {
 			"hp": f.hp, "shield": f.shield, "burn": f.burn, "poison": f.poison, "rust": f.rust, "oil": f.oil,
-			"sparks": f.sparks.map(func(sp: Spark) -> int: return mini(sp.pos, f.rooms.size())),
+			"sparks": f.sparks.map(func(sp: Spark) -> int: return sp.pos),
 			"rooms": f.rooms.map(func(r: RoomInst) -> Dictionary: return { "broken": r.broken, "charge": r.charge, "counter": r.counter }),
 		}
 	frames.append({ "tick": tick, "a": s.call(a), "b": s.call(b), "events": events })

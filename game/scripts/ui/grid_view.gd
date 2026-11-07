@@ -5,6 +5,8 @@ extends Control
 ## Only displays and reports taps; the rules live in game/core.
 
 signal cell_tapped(x: int, y: int)
+## A tap on a placed room (index into tower.rooms), e.g. for details during a fight.
+signal room_tapped(index: int)
 
 const MAX_ROWS := 8
 const GAP := 3.0
@@ -15,11 +17,123 @@ var selected := -1
 var ghost: Dictionary = {}
 ## Text on the first locked row, e.g. "ab Stunde 3".
 var locked_text := ""
+## Compact mode for fights: no locked rows, smaller text, room details on tap.
+var compact := false
+
+# ---- fight playback (apply_frame, flash, pop), same interface as TowerView
+## Room states of the current frame: [{ broken, charge, counter }].
+var _states: Array = []
+## First cell of each step on the spark's path (the engine's path, see UhrCombat._grid_layout).
+var _path_cells: Array = []
+var _sparks: Array[Panel] = []
+var _flash := {}
+var _rising := {}
 
 
 func setup(t: Dictionary) -> void:
 	tower = t
+	_states = []
+	_flash = {}
+	for sp in _sparks:
+		sp.queue_free()
+	_sparks.clear()
+	_path_cells = _compute_path_cells()
 	queue_redraw()
+
+
+## Mirrors the engine's path: cells in snake order, consecutive cells of the same owner (or
+## empty) form one step. The spark position in a frame is an index into these steps.
+func _compute_path_cells() -> Array:
+	var occ := UhrRasterTower._occupancy(tower)
+	var out: Array = []
+	var last := -2
+	for cell in UhrCombat.snake_order(int(tower.width), int(tower.rows)):
+		var o: int = occ[cell[1] * int(tower.width) + cell[0]]
+		if o != last:
+			out.append(cell)
+			last = o
+	return out
+
+
+func show_static() -> void:
+	queue_redraw()
+
+
+func apply_frame(side: Dictionary, animate: float) -> void:
+	_states = side.rooms
+	var positions: Array = side.sparks
+	while _sparks.size() < positions.size():
+		var sp := _make_spark()
+		add_child(sp)
+		sp.position = _spark_point(int(positions[_sparks.size()])) - sp.size / 2
+		_sparks.append(sp)
+	for k in positions.size():
+		var target := _spark_point(int(positions[k])) - _sparks[k].size / 2
+		if animate > 0.0:
+			create_tween().tween_property(_sparks[k], "position", target, animate).set_trans(Tween.TRANS_SINE)
+		else:
+			_sparks[k].position = target
+	queue_redraw()
+
+
+func _spark_point(pos: int) -> Vector2:
+	if _path_cells.is_empty():
+		return Vector2.ZERO
+	var cell: Array = _path_cells[clampi(pos, 0, _path_cells.size() - 1)]
+	var r := cell_rect(cell[0], cell[1])
+	# Rows to the right start at the left edge, rows to the left at the right edge.
+	var x := r.position.x + 8.0 if int(cell[1]) % 2 == 0 else r.end.x - 8.0
+	return Vector2(x, r.get_center().y)
+
+
+func _make_spark() -> Panel:
+	var sp := Panel.new()
+	sp.size = Vector2(12, 12)
+	sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var b := StyleBoxFlat.new()
+	b.bg_color = Color(1.0, 0.95, 0.8)
+	b.set_corner_radius_all(6)
+	b.shadow_color = Color(UhrStyle.BRASS, 0.9)
+	b.shadow_size = 8
+	sp.add_theme_stylebox_override("panel", b)
+	sp.z_index = 2
+	return sp
+
+
+## Brief highlight when a room fires.
+func flash(i: int, strong := false) -> void:
+	if i < 0 or i >= tower.rooms.size():
+		return
+	_flash[i] = 2 if strong else 1
+	queue_redraw()
+	get_tree().create_timer(0.14).timeout.connect(func() -> void:
+		_flash.erase(i)
+		queue_redraw())
+
+
+## A small number rising from room i.
+func pop(i: int, text: String, color: Color) -> void:
+	if i < 0 or i >= tower.rooms.size():
+		return
+	var first: Array = _abs_cells(tower.rooms[i])[0]
+	var r := cell_rect(first[0], first[1])
+	var l := UhrStyle.label(text, 13 if compact else 15, color, false)
+	l.add_theme_color_override("font_outline_color", UhrStyle.NIGHT)
+	l.add_theme_constant_override("outline_size", 5)
+	var stack: int = _rising.get(i, 0)
+	_rising[i] = stack + 1
+	l.size = Vector2(r.size.x, 18)
+	l.position = Vector2(r.position.x, r.position.y + 2 + stack * 14)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	l.z_index = 3
+	add_child(l)
+	var tw := create_tween().set_parallel()
+	tw.tween_property(l, "position:y", l.position.y - 22, 0.7).set_ease(Tween.EASE_OUT)
+	tw.tween_property(l, "modulate:a", 0.0, 0.7).set_delay(0.25)
+	tw.chain().tween_callback(func() -> void:
+		_rising[i] = maxi(0, _rising.get(i, 1) - 1)
+		l.queue_free())
 
 
 func set_ghost(g: Dictionary) -> void:
@@ -32,9 +146,15 @@ func set_selected(i: int) -> void:
 	queue_redraw()
 
 
+## Always the full frame of 8 rows: locked rows show how far the tower can still grow and keep
+## both towers in a fight the same size.
+func _shown_rows() -> int:
+	return MAX_ROWS
+
+
 func cell_size() -> Vector2:
 	var w := size.x / UhrRasterTower.WIDTH
-	var h := minf(w * 0.7, size.y / MAX_ROWS)
+	var h := minf(w * (1.25 if compact else 0.7), size.y / _shown_rows())
 	return Vector2(w, h)
 
 
@@ -58,6 +178,10 @@ func _gui_input(event: InputEvent) -> void:
 	if x >= 0 and x < UhrRasterTower.WIDTH and y >= 0 and y < int(tower.rows):
 		accept_event()
 		cell_tapped.emit(x, y)
+		for i in tower.rooms.size():
+			if _abs_cells(tower.rooms[i]).has([x, y]):
+				room_tapped.emit(i)
+				break
 
 
 func _notification(what: int) -> void:
@@ -70,16 +194,16 @@ func _draw() -> void:
 	var c := cell_size()
 	var rows := int(tower.rows)
 	# Cells: open rows with the spark's direction, locked rows dimmed.
-	for y in MAX_ROWS:
+	for y in _shown_rows():
 		for x in UhrRasterTower.WIDTH:
 			var r := cell_rect(x, y).grow(-GAP)
 			if y < rows:
 				draw_rect(r, UhrStyle.PANEL.darkened(0.25))
 				var arrow := "›" if y % 2 == 0 else "‹"
-				draw_string(font, r.position + Vector2(0, r.size.y * 0.5 + 6), arrow, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, 18, UhrStyle.LINE.lightened(0.15))
+				draw_string(font, r.position + Vector2(0, r.size.y * 0.5 + 6), arrow, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, 14 if compact else 18, UhrStyle.LINE.lightened(0.15))
 			else:
 				draw_rect(r, UhrStyle.NIGHT.lightened(0.03))
-	if rows < MAX_ROWS and locked_text != "":
+	if not compact and rows < MAX_ROWS and locked_text != "":
 		var lr := cell_rect(0, rows)
 		draw_string(font, lr.position + Vector2(0, lr.size.y * 0.5 + 5), locked_text, HORIZONTAL_ALIGNMENT_CENTER, c.x * UhrRasterTower.WIDTH, 13, UhrStyle.MUTED)
 	# Rooms.
@@ -87,20 +211,31 @@ func _draw() -> void:
 		var room: Dictionary = tower.rooms[i]
 		var def := UhrContent.raster_room(room.id)
 		var col := UhrStyle.guild_color(def.guild)
-		_draw_cells(_abs_cells(room), UhrStyle.PANEL.lerp(col, 0.28), UhrStyle.BRASS if i == selected else col, 3.0 if i == selected else 1.5)
+		var fill := UhrStyle.PANEL.lerp(col, 0.28)
+		if _flash.has(i):
+			fill = UhrStyle.BRASS.darkened(0.3) if _flash[i] == 2 else UhrStyle.PANEL.lerp(col, 0.6)
+		var st: Dictionary = _states[i] if i < _states.size() else {}
+		if st.get("broken", false):
+			fill = Color(fill, 0.35)
+		_draw_cells(_abs_cells(room), fill, UhrStyle.BRASS if i == selected else col, 3.0 if i == selected else 1.5)
 		var first: Array = _abs_cells(room)[0]
-		var fr := cell_rect(first[0], first[1]).grow(-GAP - 4)
+		var fr := cell_rect(first[0], first[1]).grow(-GAP - (2 if compact else 4))
 		var tier := int(room.tier) if room.get("tier") != null else 0
 		var name: String = def.name
 		# Long names (Quecksilberhemmung) get a smaller font instead of being cut off.
-		var fs := 13
-		while fs > 9 and font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > fr.size.x:
+		var fs := 11 if compact else 13
+		var min_fs := 8 if compact else 9
+		while fs > min_fs and font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > fr.size.x:
 			fs -= 1
-		draw_string(font, fr.position + Vector2(0, 16), name, HORIZONTAL_ALIGNMENT_LEFT, fr.size.x, fs, UhrStyle.TEXT)
+		draw_string(font, fr.position + Vector2(0, fs + 3), name, HORIZONTAL_ALIGNMENT_LEFT, fr.size.x, fs, UhrStyle.TEXT)
 		var sub: String = ["I", "II", "III", "IV"][tier]
-		if room.get("alloy") != null and room.get("alloy") != "":
+		if not compact and room.get("alloy") != null and room.get("alloy") != "":
 			sub += " · " + str(UhrContent.alloy(room.alloy).name)
-		draw_string(font, fr.position + Vector2(0, 32), sub, HORIZONTAL_ALIGNMENT_LEFT, fr.size.x, 11, UhrStyle.TIER_COLORS[tier])
+		if def.has("counterMax") and int(def.counterMax) > 1 and st.has("counter"):
+			sub += " · %d/%d" % [int(st.counter), int(def.counterMax)]
+		if float(st.get("charge", 0.0)) > 0.0:
+			sub += " · +%d" % int(floorf(float(st.charge) + 0.5))
+		draw_string(font, fr.position + Vector2(0, fs + 17), sub, HORIZONTAL_ALIGNMENT_LEFT, fr.size.x, 10 if compact else 11, UhrStyle.TIER_COLORS[tier])
 	# Ghost.
 	if not ghost.is_empty():
 		var cells: Array = []

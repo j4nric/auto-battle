@@ -522,7 +522,7 @@ class Combat {
   snapshot(): void {
     const s = (f: Fighter): FrameSide => ({
       hp: f.hp, shield: f.shield, burn: f.burn, poison: f.poison, rust: f.rust, oil: f.oil,
-      sparks: f.sparks.map((sp) => Math.min(sp.pos, f.rooms.length)),
+      sparks: f.sparks.map((sp) => sp.pos), // index into the path (in a column: the room, or the empty floors)
       rooms: f.rooms.map((r) => ({ broken: r.broken, charge: r.charge, counter: r.counter })),
     });
     this.frames!.push({ tick: this.tick, a: s(this.a), b: s(this.b), events: this.events });
