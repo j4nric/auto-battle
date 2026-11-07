@@ -11,7 +11,8 @@
     "sim:smoke": "node sim/simulate.ts --smoke",
     "golden": "node tools/golden.ts",
     "viewer": "node sim/serve.ts",
-    "sim:quick": "node sim/quick.ts"
+    "sim:quick": "node sim/quick.ts",
+    "sim:raster": "node sim/raster.ts"
   },
   "engines": {
     "node": ">=22.18"

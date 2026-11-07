@@ -74,6 +74,13 @@ Deine Gegner sind rivalisierende Uhrmacher:innen. Auch sie bauen Türme und woll
 
 ## 3. Räume (die Items)
 
+> **Umstellung auf das Raster (ADR 0008, 07.11.2026):** Der Turm wird 3 Felder breit und wächst
+> von 3×3 auf 3×8. Räume haben Formen (Rechtecke und einige L-Formen, drehbar), der Funke läuft
+> als Schlange Reihe für Reihe. Nachbarn sind alle Räume mit gemeinsamer Kante, aus „der Raum
+> darunter“ wird „der Raum davor auf dem Funkenweg“, Rezepte werden zu Mustern. Umbauen geht
+> außerhalb des Kampfs jederzeit. Die Beschreibung unten gilt für den Spaltenturm, bis das Spiel
+> umgestellt ist (M5). Prototyp und Messung: `docs/balance/2026-11-07-raster-prototyp.md`.
+
 Jeder Raum hat:
 
 - **Höhe** 1, 2 oder 3 Etagen (Bazaar-Slotgrößen). Turm startet mit 8 Etagen, erweiterbar auf 10–12.
@@ -229,7 +236,8 @@ Keine Stat-Boosts kaufen, nur Optionen. Die Stärke muss aus dem Build kommen.
 | M2 | Kampf spielbar | Zwei Türme, Funke animiert, auf dem Handy, Debug-Menü, als App auf den Startbildschirm |
 | M3 | Run spielbar | Werkstatt, Vorzeichen, 12 Stunden, Speichern |
 | M4 | Balance-Runde 2 | Glocken und Wehr stärken, Zeitschleife bremsen, Stunden 2 bis 4 schwerer |
-| M5 | Juice | Animationen, Partikel, Haptik, Klang |
-| M6 | Meta | Dorf, Kodex, Uhrmacher:innen, Freischaltungen |
-| M7 | Geister und Tagesseed | Kleines Backend auf dem vServer |
-| M8 | Store-Builds | Android und iOS |
+| M5 | Raster | Turm als 3er-Raster im Spiel: Port, Werkstatt mit Drehen und Platzieren, Kampfansicht, alle Räume umgestellt (ADR 0008) |
+| M6 | Juice | Animationen, Partikel, Haptik, Klang |
+| M7 | Meta | Dorf, Kodex, Uhrmacher:innen, Freischaltungen |
+| M8 | Geister und Tagesseed | Kleines Backend auf dem vServer |
+| M9 | Store-Builds | Android und iOS |
