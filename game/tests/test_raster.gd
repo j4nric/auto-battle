@@ -65,3 +65,54 @@ func test_rotation_matches_lab() -> void:
 	check_eq(UhrContent.cells_of(ball, 0), [[0, 0], [1, 0], [0, 1]], "rot 0")
 	check_eq(UhrContent.cells_of(ball, 1), [[0, 0], [0, 1], [1, 1]], "rot 1")
 	check_eq(UhrCombat.snake_order(3, 2), [[0, 0], [1, 0], [2, 0], [2, 1], [1, 1], [0, 1]], "snake")
+
+
+func test_raster_runs_match_lab_after_every_action() -> void:
+	var g := load_golden("raster.json")
+	check(g.get("runs", []).size() > 0, "no golden raster runs found")
+	for gr in g.get("runs", []):
+		var run := UhrRasterRun.create(int(gr.seed))
+		var problem := _compare_state(gr.states[0], run.digest())
+		if problem != "":
+			fail("%s seed %d start: %s" % [gr.kind, int(gr.seed), problem])
+			continue
+		for i in gr.actions.size():
+			var a: Dictionary = gr.actions[i]
+			if not run.act(a):
+				fail("%s seed %d action %d rejected: %s" % [gr.kind, int(gr.seed), i, str(a)])
+				break
+			problem = _compare_state(gr.states[i + 1], run.digest())
+			if problem != "":
+				fail("%s seed %d after action %d %s: %s" % [gr.kind, int(gr.seed), i, str(a), problem])
+				break
+
+
+func test_raster_run_replays_from_json() -> void:
+	var run := UhrRasterRun.create(11)
+	run.act({ "t": "buy", "offer": 0, "upgrade": false, "x": 0, "y": 0, "rot": 0 })
+	run.act({ "t": "endShop" })
+	var d: Dictionary = JSON.parse_string(JSON.stringify({ "seed": run.seed, "actions": run.actions }))
+	var again := UhrRasterRun.replay(int(d.seed), d.actions)
+	check(again != null, "replay after JSON round trip was rejected")
+	if again != null:
+		check_eq(_compare_state(again.digest(), run.digest()), "", "state after replay")
+
+
+func _compare_state(want: Dictionary, got: Dictionary) -> String:
+	for key in want.keys():
+		if not _same(want[key], got.get(key)):
+			return "%s: lab %s, game %s" % [key, str(want[key]), str(got.get(key))]
+	return ""
+
+
+func _same(x: Variant, y: Variant) -> bool:
+	if x is float or y is float or x is int or y is int:
+		return (x is float or x is int) and (y is float or y is int) and float(x) == float(y)
+	if x is Array and y is Array:
+		if x.size() != y.size():
+			return false
+		for i in x.size():
+			if not _same(x[i], y[i]):
+				return false
+		return true
+	return x == y

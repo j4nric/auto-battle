@@ -6,6 +6,8 @@ import { ROOMS, ALLOY_IDS } from '../src/content.ts';
 import { fight, type Tower, type GridTower } from '../src/engine/combat.ts';
 import { RASTER_ROOMS } from '../src/raster/content.ts';
 import * as G from '../src/raster/tower.ts';
+import * as RR from '../src/raster/run.ts';
+import { RasterTinker } from '../src/raster/bots.ts';
 import { applyFusions, BASE_FLOORS } from '../src/engine/tower.ts';
 import { HP_TABLE, createRun, act, playRun, type Run, type Action } from '../src/run/run.ts';
 import { TinkerBot } from '../src/run/bots.ts';
@@ -167,8 +169,53 @@ console.log(`tests/golden/combat.json: ${fights.length} fights`);
     const res = G.applyFusions(t);
     return { input: t, output: res.tower, fused: res.fused };
   });
-  write('raster.json', { generator: 'lab/tools/golden.ts', statsColumns: ['dmg', 'shield', 'heal', 'burn', 'poison', 'activations'], fights: rfights, fusions: rfusions });
-  console.log(`tests/golden/raster.json: ${rfights.length} fights, ${rfusions.length} fusion cases`);
+  // Grid runs: seed + actions, state after every action (like runs.json).
+  const rdigest = (r: RR.Run) => ({
+    phase: r.phase, hour: r.hour, gold: r.gold, lives: r.lives, wins: r.wins, rerollCost: r.rerollCost, merchant: r.merchant,
+    rows: r.tower.rows,
+    tower: r.tower.rooms.map((x) => [x.id, x.tier ?? 0, x.alloy ?? null, x.x, x.y, x.rot ?? 0]),
+    offers: r.offers.map((o) => [o.id, o.tier, o.price]),
+    omens: r.omens.map((o) => o.id),
+    pendingAlloy: r.pendingAlloy,
+    fusions: [...r.fusionsFound],
+    fights: r.fights.map((f) => (f.skipped ? [f.omen] : [f.omen, f.opponent, f.won ? 1 : 0, f.ticks])),
+    midnight: r.midnight,
+  });
+  const chaosGrid = (seed: number): RR.Run => {
+    const run = RR.createRun(seed);
+    const prng = new Rng(hashSeed('golden-raster-player', seed));
+    for (let guard = 0; guard < 500 && run.phase !== 'over'; guard++) {
+      if (run.phase === 'omen') { RR.act(run, { t: 'omen', id: prng.pick(run.omens).id }); continue; }
+      if (run.phase === 'alloy') { RR.act(run, { t: 'alloy', idx: prng.int(run.tower.rooms.length) }); continue; }
+      if (prng.chance(0.2) || guard % 11 === 10) { RR.act(run, { t: 'endShop' }); continue; }
+      const n = run.tower.rooms.length;
+      const list: RR.Action[] = [];
+      run.offers.forEach((_, offer) => {
+        list.push({ t: 'buy', offer, upgrade: prng.chance(0.3), x: prng.int(3), y: prng.int(run.tower.rows), rot: prng.int(4) });
+        const spots = G.dropSpots(run.tower, run.offers[offer].id);
+        if (spots.length) list.push({ t: 'buy', offer, upgrade: false, ...prng.pick(spots) });
+      });
+      if (n && prng.chance(0.25)) list.push({ t: 'sell', idx: prng.int(n) });
+      if (n && prng.chance(0.4)) list.push({ t: 'move', idx: prng.int(n), x: prng.int(3), y: prng.int(run.tower.rows), rot: prng.int(4) });
+      if (prng.chance(0.3)) list.push({ t: 'reroll' });
+      RR.act(run, prng.pick(list.length ? list : [{ t: 'endShop' } as RR.Action]));
+    }
+    return run;
+  };
+  const gridRuns: Array<{ seed: number; kind: string; run: RR.Run }> = [];
+  for (let k = 0; k < 8; k++) gridRuns.push({ seed: 2000 + k, kind: 'chaos', run: chaosGrid(2000 + k) });
+  for (const seed of [7, 42]) gridRuns.push({ seed, kind: 'tinkerer', run: RR.playRun(seed, new RasterTinker()) });
+  const rruns = gridRuns.map(({ seed, kind, run }) => {
+    const r = RR.createRun(seed);
+    const states = [rdigest(r)];
+    for (const a of run.actions) {
+      if (!RR.act(r, a)) throw new Error(`golden raster replay rejected ${JSON.stringify(a)}`);
+      states.push(rdigest(r));
+    }
+    return { seed, kind, actions: run.actions, states };
+  });
+  write('raster.json', { generator: 'lab/tools/golden.ts', statsColumns: ['dmg', 'shield', 'heal', 'burn', 'poison', 'activations'], fights: rfights, fusions: rfusions, runs: rruns });
+  console.log(`tests/golden/raster.json: ${rfights.length} fights, ${rfusions.length} fusion cases, ${rruns.length} runs with ${rruns.reduce((n, r) => n + r.actions.length, 0)} actions`);
 }
 
 // ------------------------------------------------------------------ fusions
