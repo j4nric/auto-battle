@@ -23,6 +23,7 @@ var ghost: Dictionary = {}
 
 
 func _ready() -> void:
+	UhrSound.warm()
 	run = UhrRasterSession.run
 	if run == null:
 		run = UhrRasterSession.load_saved()
@@ -340,13 +341,65 @@ func _choose_omen(id: String) -> void:
 # ------------------------------------------------------------------ input
 func _act(a: Dictionary) -> bool:
 	var fused_before := run.fusions_found.size()
+	var rows_before := int(run.tower.rows)
+	# The placed room's id, read before the action (a bought offer leaves the shop).
+	var placed_id := ""
+	if a.t == "buy" and a.has("x"):
+		placed_id = run.offers[int(a.offer)].id
+	elif a.t == "move":
+		placed_id = run.tower.rooms[int(a.idx)].id
 	var ok := UhrRasterSession.act(a)
 	if not ok:
 		_toast("Das geht gerade nicht.")
+		UhrSound.play("pick", -6.0)
 	elif run.fusions_found.size() > fused_before:
 		_toast("Verschmelzung: %s!" % UhrContent.raster_room(run.fusions_found[-1]).name)
 	_refresh()
+	if ok:
+		_feedback(a, placed_id, run.fusions_found.size() > fused_before, int(run.tower.rows) > rows_before)
 	return ok
+
+
+## Sound, vibration and a little motion for an action that went through.
+func _feedback(a: Dictionary, placed_id: String, fused: bool, grew: bool) -> void:
+	if fused:
+		var id: String = run.fusions_found[-1]
+		for i in run.tower.rooms.size():
+			if run.tower.rooms[i].id == id:
+				grid.land(i)
+				grid.burst(i, 30, UhrStyle.BRASS)
+		UhrSound.play("fusion")
+		UhrHaptics.buzz(40)
+		return
+	if grew:
+		UhrSound.play("row")
+	match a.t:
+		"buy", "move":
+			var i := -1
+			if placed_id != "":
+				var first: Array = UhrContent.cells_of(UhrContent.raster_room(placed_id), int(a.rot))[0]
+				i = _room_at(int(a.x) + first[0], int(a.y) + first[1])
+			if i >= 0:
+				grid.land(i)
+				grid.burst(i, 10)
+			UhrSound.play("place")
+			if a.t == "buy":
+				UhrSound.play("coin", -6.0)
+			UhrHaptics.buzz(12)
+		"sell":
+			UhrSound.play("coin", -4.0)
+			UhrHaptics.buzz(12)
+		"reroll":
+			UhrSound.play("tick")
+		"alloy":
+			var i := int(a.idx)
+			if i >= 0 and i < run.tower.rooms.size():
+				grid.land(i)
+				grid.burst(i, 16, UhrStyle.BRASS)
+			UhrSound.play("bell", -4.0)
+			UhrHaptics.buzz(25)
+		"endShop":
+			UhrSound.play("pick")
 
 
 func _clear_selection(refresh := true) -> void:
@@ -362,6 +415,7 @@ func _on_offer_tapped(i: int) -> void:
 	if int(run.offers[i].price) > run.gold:
 		_toast("Zu teuer.")
 		return
+	UhrSound.play("pick")
 	var same := i == selected_offer
 	_clear_selection(false)
 	if not same:
@@ -467,8 +521,13 @@ func _confirm_move() -> void:
 func _upgrade() -> void:
 	var i := selected_offer
 	_clear_selection(false)
+	var id: String = run.offers[i].id
 	if _act({ "t": "buy", "offer": i, "upgrade": true }):
 		_toast("Aufgewertet.")
+		var k := _duplicate_index(id)
+		if k >= 0:
+			grid.land(k)
+			grid.burst(k, 14, UhrStyle.BRASS)
 
 
 func _duplicate_index(id: String) -> int:
