@@ -78,8 +78,9 @@ Deine Gegner sind rivalisierende Uhrmacher:innen. Auch sie bauen Türme und woll
 > von 3×3 auf 3×8. Räume haben Formen (Rechtecke und einige L-Formen, drehbar), der Funke läuft
 > als Schlange Reihe für Reihe. Nachbarn sind alle Räume mit gemeinsamer Kante, aus „der Raum
 > darunter“ wird „der Raum davor auf dem Funkenweg“, Rezepte werden zu Mustern. Umbauen geht
-> außerhalb des Kampfs jederzeit. Die Beschreibung unten gilt für den Spaltenturm, bis das Spiel
-> umgestellt ist (M5). Prototyp und Messung: `docs/balance/2026-11-07-raster-prototyp.md`.
+> außerhalb des Kampfs jederzeit. Seit dem 07.11.2026 spielt das Spiel im Raster (M5). Räume mit
+> Formen und eigenen Werten stehen in `game/data/raster.json`, die Beschreibung unten zu Etagen gilt
+> nur noch für den alten Spaltenturm. Messungen: `docs/balance/2026-11-07-raster-balance.md`.
 
 Jeder Raum hat:
 

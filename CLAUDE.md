@@ -14,7 +14,8 @@ Sequenzieller Auto Battler fürs Handy im Hochformat. Ein Funke läuft durch den
 |---|---|
 | `lab/` | Labor in TypeScript: Kampf-Engine, Run-Logik, Bots, Simulation, Browser-Viewer. Die Referenz für alle Regeln. |
 | `game/` | Godot-4.7-Projekt. `game/core/` ist der Port der Regeln, `game/scenes/` und `game/scripts/` die Oberfläche. |
-| `game/data/content.json` | Alle Räume, Verschmelzungen und Legierungen. Labor und Spiel lesen diese Datei (ADR 0006, `docs/content-format.md`). |
+| `game/data/content.json` | Gilden, Legierungen, Rivalen, Vorzeichen und die Räume des alten Spaltenturms. Labor und Spiel lesen diese Datei (ADR 0006, `docs/content-format.md`). |
+| `game/data/raster.json` | Die Räume des Spiels mit Formen und die Muster-Rezepte (ADR 0008). |
 | `tests/golden/` | Golden-Vektoren aus dem Labor. Das Spiel muss sie exakt treffen. |
 | `deploy/` | Container und Caddyfile für den vServer. |
 | `scripts/` | Godot-Installation, Web-Build, Hooks. |
@@ -31,7 +32,7 @@ cd lab && npm run sim -- --runs 300 # volle Simulation, Bericht in lab/sim/outpu
 cd lab && npm run sim:quick -- --runs 400 --seed 2   # schnelle Kennzahlen (Etagen-Anteil je Zunft, Siegquote je Stunde)
 cd lab && npm run sim:raster -- --runs 150      # Raster-Prototyp (ADR 0008), Bericht in lab/sim/output/raster.md
 cd lab && npm run viewer            # Labor-Viewer: http://localhost:5173/lab/viewer/
-cd lab && node tools/replay.ts UHR1.…  # Fehler-Code aus dem Spiel nachspielen
+cd lab && node tools/replay.ts UHR2.…  # Fehler-Code aus dem Spiel nachspielen (UHR1 = alter Spaltenturm)
 ./scripts/install-godot.sh          # Godot 4.7.2 nach ~/.local/bin/godot
 godot --headless --path game --script res://tests/run_tests.gd   # Godot-Tests
 ./scripts/build-web.sh              # Web-Export nach build/web/
@@ -77,7 +78,7 @@ Es ist eine Seite mit Datenbank (`ArtifactData`). Pflicht nach jedem Arbeitsschr
 - **Verlauf**: Eintrag in `log` (`ts`, `kind`: commit | pr | merge | deploy | decision | note, `title`, `body`, optional `url`). Ids sortierbar: `JJJJMMTT-HHMM-stichwort`.
 - **Meilensteine**: `milestones/M0..M8` mit `status` (done | active | planned) und kurzer `note`.
 - **Fragen**: Entscheidungen des Nutzers als Dokument in `questions` (`order`, `area`, `title`, `context`, `recommendation`, `options`, `status: open`). Nicht im Chat fragen, wenn es im Cockpit beantwortet werden kann.
-- **Raum-Wiki**: Nach jeder Änderung an `content.json` `node lab/tools/wiki.ts` laufen lassen und die Dateien aus `lab/sim/output/wiki/rooms/` in `rooms` schreiben. Notizen in `roomNotes` (`room`, `text`, `ts`) mit `claudeAck != true` wie Spieltest-Notizen behandeln.
+- **Raum-Wiki**: Nach jeder Änderung an `game/data/raster.json` (die Räume des Spiels, ADR 0008) `node lab/tools/wiki.ts` laufen lassen und die Dateien aus `lab/sim/output/wiki/rooms/` in `rooms` schreiben. Notizen in `roomNotes` (`room`, `text`, `ts`) mit `claudeAck != true` wie Spieltest-Notizen behandeln.
 - **Simulation**: Jede aussagekräftige Messung als Dokument in `sims` (`ts`, `area`, `title`, `summary`, `columns`, `rows`, optional `note`, `cmd`, `url`). Zahlen als Text mit deutschem Komma.
 - **meta/project**: `branch`, `lastCommit`, `openPr`, `serverUrl`, `serverLive`, `build`, `updatedAt` nach jedem Merge und Deploy aktualisieren.
 - Agenten haben keinen Cockpit-Zugriff. Claude überträgt ihre Ergebnisse.

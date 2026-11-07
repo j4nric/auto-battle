@@ -1,6 +1,6 @@
 # 0008: Der Turm wird ein Raster, drei Felder breit
 
-Datum: 2026-11-07 · Status: Angenommen (Prototyp im Labor, Spiel folgt in M5)
+Datum: 2026-11-07 · Status: Angenommen, umgesetzt in M5 (seit 07.11.2026 das Hauptspiel)
 
 ## Kontext
 

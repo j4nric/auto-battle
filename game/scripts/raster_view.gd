@@ -1,7 +1,7 @@
 extends Control
-## Raster preview (ADR 0008): workshop on the 3-wide grid. Tap an offer, tap a cell to see where
-## it would go (green fits, red does not), rotate, then tap again or "Einbauen". Tap a placed room
-## to sell, rotate or move it. Fights resolve directly; the animated grid fight follows in M5.
+## The run on the 3-wide grid (ADR 0008): workshop, omens, alloys, run end. Tap an offer, tap a
+## cell to see where it would go (green fits, red does not), rotate, then tap again or
+## "Einbauen". Tap a placed room to sell, rotate or move it. Fights play in the combat view.
 
 const MAIN_SCENE := "res://scenes/main.tscn"
 
@@ -13,6 +13,7 @@ var hint_label: Label
 var cells_label: Label
 var bottom: VBoxContainer
 var toast: Label
+var sheet: Control
 
 var selected_offer := -1
 var selected_room := -1
@@ -60,7 +61,10 @@ func _build_ui() -> void:
 	titles.add_child(title_label)
 	titles.add_child(stats_label)
 	head.add_child(titles)
-	head.add_child(UhrStyle.label("Raster-\nVorschau", 11, UhrStyle.MUTED, false))
+	var report := UhrStyle.button("Melden")
+	report.add_theme_font_size_override("font_size", 14)
+	report.pressed.connect(_show_report)
+	head.add_child(report)
 	col.add_child(head)
 
 	hint_label = UhrStyle.label("", 14, UhrStyle.TEXT)
@@ -290,11 +294,18 @@ func _render_alloy() -> void:
 func _render_over() -> void:
 	var text := "Mitternacht! Dein Turm schlägt." if run.midnight else "Dein Turm ist eingestürzt."
 	hint_label.text = "%s %d Siege in %d Stunden." % [text, run.wins, run.hour]
-	var again := UhrStyle.button("Neuer Raster-Run", true)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var report := UhrStyle.button("Run melden")
+	report.pressed.connect(_show_report)
+	var again := UhrStyle.button("Neuer Run", true)
+	again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	again.pressed.connect(func() -> void:
 		UhrRasterSession.new_run(int(Time.get_unix_time_from_system()) % 1000000)
 		get_tree().reload_current_scene())
-	bottom.add_child(again)
+	row.add_child(report)
+	row.add_child(again)
+	bottom.add_child(row)
 
 
 func _last_fight_text() -> String:
@@ -475,3 +486,45 @@ func _toast(text: String) -> void:
 	tw.tween_property(toast, "modulate:a", 1.0, 0.15)
 	tw.tween_interval(1.6)
 	tw.tween_property(toast, "modulate:a", 0.0, 0.3)
+
+
+func _show_report() -> void:
+	if sheet:
+		sheet.queue_free()
+	var code := UhrRasterSession.report_code()
+	var panel := PanelContainer.new()
+	var sb := UhrStyle.box(Color(0.19, 0.17, 0.25), 14)
+	sb.set_content_margin_all(16)
+	panel.add_theme_stylebox_override("panel", sb)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 8)
+	col.add_child(UhrStyle.label("Fehler melden", 20, UhrStyle.BRASS))
+	col.add_child(UhrStyle.label("Der Code enthält Seed und alle deine Züge. Damit spielt Claude deinen Run exakt nach. Kopiere ihn in den Chat oder in eine Spieltest-Notiz im Cockpit.", 14, UhrStyle.TEXT))
+	var field := TextEdit.new()
+	field.text = code
+	field.editable = false
+	field.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	field.custom_minimum_size.y = 110
+	col.add_child(field)
+	var status := UhrStyle.label("", 13, UhrStyle.MUTED)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var close := UhrStyle.button("Schließen")
+	close.pressed.connect(func() -> void:
+		sheet.queue_free()
+		sheet = null)
+	var copy := UhrStyle.button("Kopieren", true)
+	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	copy.pressed.connect(func() -> void:
+		DisplayServer.clipboard_set(code)
+		field.select_all()
+		status.text = "Kopiert. Falls nicht, den Code markieren und kopieren.")
+	row.add_child(close)
+	row.add_child(copy)
+	col.add_child(row)
+	col.add_child(status)
+	panel.add_child(col)
+	panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	panel.offset_top = -340
+	sheet = panel
+	add_child(panel)
