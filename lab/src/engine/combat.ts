@@ -7,6 +7,7 @@
 // port of this file and must produce identical results (tests/golden/combat.json).
 import { ROOMS, ALLOYS, TIER_MULT, TIER_NAMES, type RoomDef, type AlloyDef, type Op, type Term, type Trigger } from '../content.ts';
 import { round } from '../rng.ts';
+import { RASTER_ROOMS, cellsOf } from '../raster/content.ts';
 
 export { TIER_MULT, TIER_NAMES };
 export const DECAY_START = 30; // from this tick on: time decay
@@ -28,6 +29,20 @@ export interface Tower {
   rooms: TowerRoom[];
   maxFloors?: number;
 }
+/** Grid tower (raster prototype, ADR 0008): rooms with a position and rotation. */
+export interface GridRoom extends TowerRoom {
+  x: number;
+  y: number;
+  rot?: number;
+}
+export interface GridTower {
+  kind: 'grid';
+  width: number;
+  rows: number;
+  rooms: GridRoom[];
+}
+export type AnyTower = Tower | GridTower;
+export const isGrid = (t: AnyTower): t is GridTower => (t as GridTower).kind === 'grid';
 export type Side = 'a' | 'b';
 
 export interface RoomStats {
@@ -51,6 +66,17 @@ interface RoomInst {
   broken: boolean;
   spawned: boolean;
   stats: RoomStats;
+  /** Neighbours whose auras reach this room, with this room's position relative to them. */
+  nbrs: Array<[RoomInst, 'above' | 'below']>;
+  /** The room the spark fires before this one ("the room below" in a single column). */
+  prev: RoomInst | null;
+}
+
+/** One step of the spark's path: a room segment or empty space. */
+interface PathStep {
+  room: number; // room index, -1 for empty space
+  cells: number; // tempo cost before alloys and discounts
+  fire: boolean; // the room fires when this step is paid (its first segment on the path)
 }
 
 interface Spark {
@@ -66,7 +92,9 @@ interface Fighter {
   rooms: RoomInst[];
   hp: number;
   maxHp: number;
-  emptyCost: number;
+  path: PathStep[];
+  /** Tempo per tick multiplier: the tower width, so a grid spark crosses about one row per tick. */
+  speed: number;
   shield: number;
   burn: number;
   poison: number;
@@ -122,16 +150,15 @@ interface Cx {
 const hasTag = (r: RoomInst | null, tags: readonly string[]): boolean => !!r && tags.some((t) => r.def.tags.includes(t));
 const countTag = (f: Fighter, tag: string): number => f.rooms.reduce((s, r) => s + (!r.broken && r.def.tags.includes(tag) ? 1 : 0), 0);
 
-function below(f: Fighter, room: RoomInst): RoomInst | null {
-  const n = f.rooms.length;
-  return n > 1 ? f.rooms[(room.idx - 1 + n) % n] : null;
+function below(_f: Fighter, room: RoomInst): RoomInst | null {
+  return room.prev;
 }
 
-function makeFighter(side: Side, tower: Tower, hp: number): Fighter {
-  const usedFloors = tower.rooms.reduce((n, r) => n + ROOMS[r.id].height, 0);
+function makeFighter(side: Side, tower: AnyTower, hp: number): Fighter {
+  const defs = isGrid(tower) ? RASTER_ROOMS : ROOMS;
   const rooms: RoomInst[] = tower.rooms.map((r, i) => ({
     id: r.id,
-    def: ROOMS[r.id],
+    def: defs[r.id],
     tier: r.tier ?? 0,
     alloy: r.alloy ? ALLOYS[r.alloy] : null,
     idx: i,
@@ -141,10 +168,12 @@ function makeFighter(side: Side, tower: Tower, hp: number): Fighter {
     broken: false,
     spawned: false,
     stats: { dmg: 0, shield: 0, heal: 0, burn: 0, poison: 0, activations: 0 },
+    nbrs: [],
+    prev: null,
   }));
+  const path = isGrid(tower) ? gridLayout(tower, rooms) : columnLayout(tower, rooms);
   return {
-    side, rooms, hp, maxHp: hp,
-    emptyCost: Math.max(0, (tower.maxFloors ?? usedFloors) - usedFloors) * CONFIG.emptyFloorCost,
+    side, rooms, hp, maxHp: hp, path, speed: isGrid(tower) ? tower.width : 1,
     shield: 0, burn: 0, poison: 0, rust: 0, oil: 0,
     sparks: rooms.length ? [{ pos: 0, meter: 0, discount: 0, loops: 0, fresh: false }] : [],
   };
@@ -166,17 +195,80 @@ function evalTerms(terms: readonly Term[], me: Fighter, foe: Fighter, room: Room
 }
 
 /**
- * Product of the auras of both neighbours (top and foundation are neighbours in the loop).
- * The target sits 'below' the room above it and 'above' the room below it.
+ * Single column: the spark climbs room by room, then crosses the empty floors and loops.
+ * Top and foundation are neighbours in the loop. A room sits 'below' the room above it and
+ * 'above' the room below it.
  */
+function columnLayout(tower: Tower, rooms: RoomInst[]): PathStep[] {
+  const n = rooms.length;
+  for (const r of rooms) {
+    if (n < 2) break;
+    const up = rooms[(r.idx + 1) % n];
+    const down = rooms[(r.idx - 1 + n) % n];
+    r.nbrs = up === down ? [[up, 'below']] : [[up, 'below'], [down, 'above']];
+    r.prev = down;
+  }
+  const used = tower.rooms.reduce((s, r) => s + ROOMS[r.id].height, 0);
+  const path: PathStep[] = rooms.map((r) => ({ room: r.idx, cells: r.def.height, fire: true }));
+  path.push({ room: -1, cells: Math.max(0, (tower.maxFloors ?? used) - used) * CONFIG.emptyFloorCost, fire: false });
+  return path;
+}
+
+/** Cells in the order the spark visits them: row by row from the bottom, alternating direction. */
+export function snakeOrder(width: number, rows: number): Array<[number, number]> {
+  const out: Array<[number, number]> = [];
+  for (let y = 0; y < rows; y++) {
+    for (let i = 0; i < width; i++) out.push([y % 2 === 0 ? i : width - 1 - i, y]);
+  }
+  return out;
+}
+
+/**
+ * Grid (ADR 0008): the spark walks the cells in snake order. Each room cell costs 1 tempo, an
+ * empty cell half. A room fires once per loop, when the spark leaves its first stretch of cells.
+ * Rooms sharing an edge are neighbours; 'above' means the target has a cell right above a cell
+ * of the source. The previous room is the one fired before it on the path (wrapping around).
+ */
+function gridLayout(tower: GridTower, rooms: RoomInst[]): PathStep[] {
+  const owner: number[] = new Array(tower.width * tower.rows).fill(-1);
+  const at = (x: number, y: number): number => (x < 0 || y < 0 || x >= tower.width || y >= tower.rows ? -1 : owner[y * tower.width + x]);
+  tower.rooms.forEach((r, i) => {
+    for (const [cx, cy] of cellsOf(rooms[i].def, r.rot ?? 0)) owner[(r.y + cy) * tower.width + r.x + cx] = i;
+  });
+  const path: PathStep[] = [];
+  const seen = new Set<number>();
+  for (const [x, y] of snakeOrder(tower.width, tower.rows)) {
+    const o = at(x, y);
+    const last = path[path.length - 1];
+    if (last && last.room === o) last.cells += o < 0 ? CONFIG.emptyFloorCost : 1;
+    else path.push({ room: o, cells: o < 0 ? CONFIG.emptyFloorCost : 1, fire: false });
+  }
+  for (const st of path) if (st.room >= 0 && !seen.has(st.room)) { seen.add(st.room); st.fire = true; }
+  const order = path.filter((st) => st.fire).map((st) => st.room);
+  order.forEach((ri, k) => { if (order.length > 1) rooms[ri].prev = rooms[order[(k - 1 + order.length) % order.length]]; });
+  // Neighbours by shared edges, in room order so aura products are deterministic.
+  for (let ti = 0; ti < rooms.length; ti++) {
+    const rel = new Map<number, 'above' | 'below'>();
+    for (let y = 0; y < tower.rows; y++) {
+      for (let x = 0; x < tower.width; x++) {
+        if (at(x, y) !== ti) continue;
+        for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+          const si = at(x + dx, y + dy);
+          if (si < 0 || si === ti) continue;
+          if (dy === -1) rel.set(si, 'above'); // the source lies right below this cell
+          else if (!rel.has(si)) rel.set(si, 'below');
+        }
+      }
+    }
+    rooms[ti].nbrs = [...rel.entries()].sort((p, q) => p[0] - q[0]).map(([si, r]) => [rooms[si], r]);
+  }
+  return path;
+}
+
+/** Product of the auras of all neighbours. */
 function auraMult(f: Fighter, foe: Fighter, room: RoomInst): number {
-  const n = f.rooms.length;
-  if (n < 2) return 1;
-  const up = f.rooms[(room.idx + 1) % n];
-  const down = f.rooms[(room.idx - 1 + n) % n];
-  const pairs: Array<[RoomInst, 'above' | 'below']> = up === down ? [[up, 'below']] : [[up, 'below'], [down, 'above']];
   let m = 1;
-  for (const [src, rel] of pairs) {
+  for (const [src, rel] of room.nbrs) {
     const aura = src.def.aura;
     if (src.broken || !aura) continue;
     if (aura.rel === 'above' && rel !== 'above') continue;
@@ -186,7 +278,7 @@ function auraMult(f: Fighter, foe: Fighter, room: RoomInst): number {
   return m;
 }
 
-const roomCost = (room: RoomInst): number => room.def.height * (room.alloy?.costMult ?? 1);
+
 
 class Combat {
   a: Fighter;
@@ -386,26 +478,25 @@ class Combat {
         spark.fresh = false;
         continue;
       }
-      spark.meter += gain;
+      spark.meter += gain * f.speed;
       let guard = 0;
-      while (guard++ < 24) {
-        if (spark.pos >= f.rooms.length) {
-          // Empty floors above the topmost room.
-          if (spark.meter < f.emptyCost) break;
-          spark.meter -= f.emptyCost;
+      while (guard++ < 24 * f.speed) {
+        const step = f.path[spark.pos];
+        const room = step.room >= 0 ? f.rooms[step.room] : null;
+        const cost = room ? Math.max(0, step.cells * (room.alloy?.costMult ?? 1) - spark.discount) : step.cells;
+        if (spark.meter < cost) break;
+        spark.meter -= cost;
+        if (room) {
+          spark.discount = 0;
+          if (step.fire) this.activate(f, room, 0, spark);
+        }
+        spark.pos++;
+        if (spark.pos >= f.path.length) {
           spark.pos = 0;
           spark.loops++;
           this.emit(f, 'loopEvent', 1, spark);
-          continue;
         }
-        const room = f.rooms[spark.pos];
-        const cost = Math.max(0, roomCost(room) - spark.discount);
-        if (spark.meter < cost) break;
-        spark.meter -= cost;
-        spark.discount = 0;
-        this.activate(f, room, 0, spark);
-        spark.pos++;
-        if (f.hp <= 0 || this.foeOf(f).hp <= 0) return;
+        if (room && (f.hp <= 0 || this.foeOf(f).hp <= 0)) return;
       }
     }
   }
@@ -460,7 +551,7 @@ class Combat {
 }
 
 /** Simulates one fight. Towers list rooms from the foundation upwards. */
-export function fight(towerA: Tower, hpA: number, towerB: Tower, hpB: number, { record = false } = {}): FightResult {
+export function fight(towerA: AnyTower, hpA: number, towerB: AnyTower, hpB: number, { record = false } = {}): FightResult {
   const a = makeFighter('a', towerA, hpA);
   const b = makeFighter('b', towerB, hpB);
   const c = new Combat(a, b, record);

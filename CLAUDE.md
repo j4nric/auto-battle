@@ -29,6 +29,7 @@ cd lab && npm run golden            # Golden-Vektoren neu erzeugen
 cd lab && npm run sim:smoke         # schnelle Simulation mit Blowout- und Determinismus-Prüfung
 cd lab && npm run sim -- --runs 300 # volle Simulation, Bericht in lab/sim/output/report.md
 cd lab && npm run sim:quick -- --runs 400 --seed 2   # schnelle Kennzahlen (Etagen-Anteil je Zunft, Siegquote je Stunde)
+cd lab && npm run sim:raster -- --runs 150      # Raster-Prototyp (ADR 0008), Bericht in lab/sim/output/raster.md
 cd lab && npm run viewer            # Labor-Viewer: http://localhost:5173/lab/viewer/
 cd lab && node tools/replay.ts UHR1.…  # Fehler-Code aus dem Spiel nachspielen
 ./scripts/install-godot.sh          # Godot 4.7.2 nach ~/.local/bin/godot

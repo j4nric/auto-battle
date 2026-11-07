@@ -9,3 +9,4 @@
 | 0005 | Git-Workflow wie bei Stammtisch | Angenommen |
 | 0006 | Inhalte als Daten mit Effekt-Bausteinen | Angenommen |
 | 0007 | Ein Run ist Seed plus Aktionsfolge | Angenommen |
+| 0008 | Der Turm wird ein Raster, drei Felder breit | Angenommen |
