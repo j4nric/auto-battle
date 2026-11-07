@@ -84,8 +84,7 @@ function calledRooms(t: GridTower): Set<string> {
   const ids = new Set(t.rooms.map((r) => r.id));
   const called = new Set<string>();
   for (const f of RASTER_FUSIONS) {
-    if (ids.has(f.pattern[0])) called.add(f.pattern[1]);
-    if (ids.has(f.pattern[1])) called.add(f.pattern[0]);
+    if (f.parts.some((p) => ids.has(p.id))) for (const p of f.parts) if (!ids.has(p.id)) called.add(p.id);
   }
   return called;
 }

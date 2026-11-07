@@ -7,9 +7,13 @@ export interface ShapedRoomDef extends RoomDef {
   /** Cells [x, y] relative to the room's origin, y pointing up. */
   shape?: Array<[number, number]>;
 }
+/**
+ * A recipe as a spatial pattern. Each part names a room and the exact cells it must cover,
+ * relative to the first cell of the first part. The result is placed there with rotation 0 and
+ * lies within the parts' cells, so a fusion frees space.
+ */
 export interface PatternFusion {
-  /** Lower room first: pattern[1] must sit directly on top of pattern[0] (same column). */
-  pattern: [string, string];
+  parts: Array<{ id: string; cells: Array<[number, number]> }>;
   result: string;
   text: string;
 }

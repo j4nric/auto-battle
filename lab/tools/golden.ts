@@ -164,8 +164,22 @@ console.log(`tests/golden/combat.json: ${fights.length} fights`);
       statsA: stats('a'), statsB: stats('b'),
     };
   });
-  const rfusions = Array.from({ length: 40 }, () => {
-    const t = randomGrid(3 + grng.int(6), 30);
+  const crafted: GridTower[] = [
+    // Three-part recipes in place, with tiers and an alloy; one with a part shifted (no fusion).
+    { kind: 'grid', width: 3, rows: 4, rooms: [
+      { id: 'kleineGlocke', tier: 1, alloy: null, x: 0, y: 0, rot: 0 }, { id: 'glockenseil', tier: 0, alloy: 'gold', x: 1, y: 0, rot: 0 },
+      { id: 'grosseGlocke', tier: 2, alloy: null, x: 0, y: 1, rot: 1 }, { id: 'waffenkammer', tier: 0, alloy: null, x: 2, y: 0, rot: 0 } ] },
+    { kind: 'grid', width: 3, rows: 5, rooms: [
+      { id: 'zahnrad', tier: 0, alloy: null, x: 1, y: 2, rot: 0 }, { id: 'feder', tier: 3, alloy: null, x: 2, y: 2, rot: 0 },
+      { id: 'unruh', tier: 0, alloy: 'rost', x: 1, y: 3, rot: 2 } ] },
+    { kind: 'grid', width: 3, rows: 4, rooms: [
+      { id: 'kleineGlocke', tier: 0, alloy: null, x: 0, y: 0, rot: 0 }, { id: 'glockenseil', tier: 0, alloy: null, x: 1, y: 0, rot: 0 },
+      { id: 'grosseGlocke', tier: 0, alloy: null, x: 1, y: 1, rot: 1 } ] },
+    { kind: 'grid', width: 3, rows: 4, rooms: [
+      { id: 'quecksilber', tier: 0, alloy: null, x: 2, y: 0, rot: 0 }, { id: 'echo', tier: 1, alloy: null, x: 2, y: 1, rot: 0 },
+      { id: 'brennofen', tier: 2, alloy: null, x: 0, y: 2, rot: 0 }, { id: 'giftkueche', tier: 0, alloy: 'glas', x: 0, y: 3, rot: 0 } ] },
+  ];
+  const rfusions = [...crafted, ...Array.from({ length: 40 }, () => randomGrid(3 + grng.int(6), 30))].map((t) => {
     const res = G.applyFusions(t);
     return { input: t, output: res.tower, fused: res.fused };
   });
