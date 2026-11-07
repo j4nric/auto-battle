@@ -1,5 +1,5 @@
 // Raster prototype simulation (ADR 0008): plays tinkerer runs on the 3-wide grid and answers the
-// prototype questions. Usage: node sim/raster.ts [--runs 150] [--seed 1]
+// prototype questions. Usage: node sim/raster.ts [--runs 150] [--seed 1] [--out raster.md]
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { hashSeed, Rng } from '../src/rng.ts';
 import { RASTER_ROOMS } from '../src/raster/content.ts';
@@ -108,5 +108,5 @@ for (const r of main.filter((x) => x.midnight).slice(0, 4)) {
   line('```');
 }
 mkdirSync(new URL('./output/', import.meta.url), { recursive: true });
-writeFileSync(new URL('./output/raster.md', import.meta.url), out.join('\n') + '\n');
+writeFileSync(new URL(`./output/${args.out ?? 'raster.md'}`, import.meta.url), out.join('\n') + '\n');
 console.log(out.join('\n'));
