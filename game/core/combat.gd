@@ -70,6 +70,8 @@ class Fighter:
 	var rust := 0
 	var oil := 0
 	var sparks: Array[Spark] = []
+	## Grid tower (ADR 0008): neighbour effects reach every room sharing an edge (q15).
+	var grid := false
 
 
 var a: Fighter
@@ -119,6 +121,7 @@ static func _make_fighter(side: String, tower: Dictionary, hp: int) -> Fighter:
 		inst.idx = i
 		f.rooms.append(inst)
 		i += 1
+	f.grid = grid
 	if grid:
 		f.path = _grid_layout(tower, f.rooms)
 		f.speed = int(tower.width)
@@ -142,8 +145,33 @@ func _log(side: String, idx: int, type: String, n: Variant = null) -> void:
 	events.append(ev)
 
 
+## Strength of copper's extra activations in the grid, where it reaches every neighbour.
+const CONDUCT_GRID := 0.5
+
+
 static func _below(f: Fighter, room: RoomInst) -> RoomInst:
 	return f.rooms[room.prev] if room.prev >= 0 else null
+
+
+## Rooms a neighbour effect reaches: in the grid every room sharing an edge, in room order
+## (q15, 07.11.2026); in the single column the room below.
+static func _adjacent(f: Fighter, room: RoomInst) -> Array[RoomInst]:
+	var out: Array[RoomInst] = []
+	if f.grid:
+		for pair in room.nbrs:
+			out.append(f.rooms[int(pair[0])])
+	else:
+		var b := _below(f, room)
+		if b != null:
+			out.append(b)
+	return out
+
+
+static func _has_any_tag(r: RoomInst, tags: Array) -> bool:
+	for t in tags:
+		if r.def.tags.has(t):
+			return true
+	return false
 
 
 ## Single column: rooms from the foundation up, then the empty floors. Top and foundation are
@@ -330,10 +358,14 @@ func _run_op(op: Dictionary, me: Fighter, room: RoomInst, mult: float, depth: in
 					_advance_counter(me, r, depth + 1, spark)
 		"retrigger":
 			# Echo rooms never repeat other echo rooms (exponential chains otherwise).
-			var target := _below(me, room)
-			if target == null or target == room or depth >= MAX_DEPTH or target.def.tags.has("echo"):
-				return
-			activate(me, target, depth + 1, spark, _eval_terms(op.bonus, me, foe, room, mult))
+			var bonus := _eval_terms(op.bonus, me, foe, room, mult)
+			for target in _adjacent(me, room):
+				if target == room or depth >= MAX_DEPTH or target.def.tags.has("echo"):
+					continue
+				# Bells advance in full even at reduced strength: chains of strikes otherwise.
+				if op.has("skipTags") and _has_any_tag(target, op.skipTags):
+					continue
+				activate(me, target, depth + 1, spark, bonus)
 		"freeNext":
 			if spark != null and not spark.chained:
 				spark.discount += float(op.amount)
@@ -345,9 +377,10 @@ func _run_op(op: Dictionary, me: Fighter, room: RoomInst, mult: float, depth: in
 		_:
 			var n := _eval_terms(op.value, me, foe, room, mult)
 			if op.has("timesIfBelowTag"):
-				var bl := _below(me, room)
-				if bl != null and bl.def.tags.has(op.timesIfBelowTag.tag):
-					n *= float(op.timesIfBelowTag.times)
+				for nb in _adjacent(me, room):
+					if nb.def.tags.has(op.timesIfBelowTag.tag):
+						n *= float(op.timesIfBelowTag.times)
+						break
 			match op.op:
 				"damage":
 					var d := _damage(foe, n)
@@ -423,9 +456,10 @@ func activate(me: Fighter, room: RoomInst, depth: int, spark: Spark, bonus := 1.
 			room.stats[1] += s
 		# Copper conducts only when the spark fires the room directly (loop via the wrap otherwise).
 		if room.alloy.get("conduct", false) and depth == 0:
-			var prev := _below(me, room)
-			if prev != null and prev != room:
-				activate(me, prev, depth + 1, spark)
+			# Grid: every neighbour at half strength; column: the room below in full.
+			for nb in _adjacent(me, room):
+				if nb != room:
+					activate(me, nb, depth + 1, spark, CONDUCT_GRID if me.grid else 1.0)
 	if room.alloy.has("breaksAfter") and room.activations >= int(room.alloy.breaksAfter):
 		room.broken = true
 

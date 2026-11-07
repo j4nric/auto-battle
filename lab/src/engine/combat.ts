@@ -103,6 +103,8 @@ interface Fighter {
   rust: number;
   oil: number;
   sparks: Spark[];
+  /** Grid tower (ADR 0008): neighbour effects reach every room sharing an edge (q15). */
+  grid: boolean;
 }
 
 export interface CombatEvent {
@@ -152,8 +154,21 @@ interface Cx {
 const hasTag = (r: RoomInst | null, tags: readonly string[]): boolean => !!r && tags.some((t) => r.def.tags.includes(t));
 const countTag = (f: Fighter, tag: string): number => f.rooms.reduce((s, r) => s + (!r.broken && r.def.tags.includes(tag) ? 1 : 0), 0);
 
+/** Strength of copper's extra activations in the grid, where it reaches every neighbour. */
+const CONDUCT_GRID = 0.5;
+
 function below(_f: Fighter, room: RoomInst): RoomInst | null {
   return room.prev;
+}
+
+/**
+ * Rooms a neighbour effect reaches: in the grid every room sharing an edge, in room order
+ * (q15, 07.11.2026); in the single column the room below.
+ */
+function adjacent(f: Fighter, room: RoomInst): RoomInst[] {
+  if (f.grid) return room.nbrs.map(([r]) => r);
+  const b = below(f, room);
+  return b ? [b] : [];
 }
 
 function makeFighter(side: Side, tower: AnyTower, hp: number): Fighter {
@@ -178,6 +193,7 @@ function makeFighter(side: Side, tower: AnyTower, hp: number): Fighter {
     side, rooms, hp, maxHp: hp, path, speed: isGrid(tower) ? tower.width : 1,
     shield: 0, burn: 0, poison: 0, rust: 0, oil: 0,
     sparks: rooms.length ? [{ pos: 0, meter: 0, discount: 0, chained: false, loops: 0, fresh: false }] : [],
+    grid: isGrid(tower),
   };
 }
 
@@ -360,9 +376,14 @@ class Combat {
       case 'retrigger': {
         // Echo rooms never repeat other echo rooms: otherwise chains grow exponentially
         // (three Zeitschleifen on top of each other = 2³ activations, simulation finding).
-        const target = below(me, room);
-        if (!target || target === room || depth >= MAX_DEPTH || target.def.tags.includes('echo')) return;
-        this.activate(me, target, depth + 1, spark, evalTerms(op.bonus, me, foe, room, c.mult));
+        const bonus = evalTerms(op.bonus, me, foe, room, c.mult);
+        for (const target of adjacent(me, room)) {
+          if (target === room || depth >= MAX_DEPTH || target.def.tags.includes('echo')) continue;
+          // Bells advance their counter in full even at reduced strength, so an echo between
+          // bells and bell ropes chains strikes (simulation finding, q15).
+          if (op.skipTags && hasTag(target, op.skipTags)) continue;
+          this.activate(me, target, depth + 1, spark, bonus);
+        }
         return;
       }
       case 'freeNext':
@@ -375,7 +396,7 @@ class Combat {
       }
       default: {
         let n = evalTerms(op.value, me, foe, room, c.mult);
-        if (op.timesIfBelowTag && hasTag(below(me, room), [op.timesIfBelowTag.tag])) n *= op.timesIfBelowTag.times;
+        if (op.timesIfBelowTag && adjacent(me, room).some((r) => hasTag(r, [op.timesIfBelowTag!.tag]))) n *= op.timesIfBelowTag.times;
         switch (op.op) {
           case 'damage': {
             const d = this.damage(foe, n);
@@ -464,8 +485,8 @@ class Combat {
       // Copper only conducts when the spark fires the room directly. Otherwise a loop forms via
       // the wrap from top to foundation (simulation finding: Antriebswerk with copper).
       if (room.alloy?.conduct && depth === 0) {
-        const prev = below(me, room);
-        if (prev && prev !== room) this.activate(me, prev, depth + 1, spark);
+        // Grid: every neighbour at half strength; column: the room below in full.
+        for (const t of adjacent(me, room)) if (t !== room) this.activate(me, t, depth + 1, spark, me.grid ? CONDUCT_GRID : 1);
       }
     }
     if (room.alloy?.breaksAfter && room.activations >= room.alloy.breaksAfter) room.broken = true;

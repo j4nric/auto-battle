@@ -16,7 +16,7 @@ export type Op =
   | { op: 'damage' | 'shield' | 'heal' | 'burn' | 'poison' | 'rust' | 'oil' | 'breakShield' | 'addCharge';
       value: Term[]; timesIfBelowTag?: { tag: string; times: number } }
   | { op: 'chargeOthers'; tag: string; value: Term[] }
-  | { op: 'retrigger'; bonus: Term[] }
+  | { op: 'retrigger'; bonus: Term[]; skipTags?: string[] }
   | { op: 'freeNext'; amount: number }
   | { op: 'firstTime'; then: Op[]; else: Op[] }
   | { op: 'spawnSpark' }
