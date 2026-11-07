@@ -21,10 +21,10 @@ test('raster rooms: shape size matches height, fusion results fit their pattern'
     }
     assert.deepEqual(f.parts[0].cells[0], [0, 0], `${f.result}: first cell of the first part is the anchor`);
   }
-  // Every room of the column game exists on the grid with the same effects.
+  // Every room of the column game exists on the grid (values may differ: the grid has its own balance).
   for (const id of Object.keys(ROOMS)) {
     assert.ok(RASTER_ROOMS[id], `${id} missing in raster.json`);
-    assert.deepEqual(RASTER_ROOMS[id].on, ROOMS[id].on, `${id}: effects differ from content.json`);
+    assert.equal(RASTER_ROOMS[id].guild, ROOMS[id].guild, `${id}: guild differs from content.json`);
   }
 });
 
@@ -89,10 +89,10 @@ test('grid fights are deterministic and an aura reaches every touching room', ()
   const a = fight(t, 500, foe, 500, { record: true });
   const b = fight(t, 500, foe, 500, { record: true });
   assert.deepEqual(a.roomStats, b.roomStats);
-  // All three Waffenkammern touch the Zahnrad and deal +25 %: 18 × 1.25 ≈ 23 per hit.
+  // All three Waffenkammern touch the Zahnrad and deal +15 %: 22 × 1.15 ≈ 25 per hit.
   const hits = a.frames!.flatMap((f) => f.events).filter((e) => e.side === 'a' && e.type === 'dmg');
   assert.ok(hits.length > 0);
-  for (const h of hits) assert.equal(h.n, 23);
+  for (const h of hits) assert.equal(h.n, 25);
 });
 
 test('raster runs replay from their actions and stay deterministic', () => {
