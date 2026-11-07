@@ -138,7 +138,7 @@
     { "id": "gold", "name": "Gold", "text": "Löst zweimal aus", "times": 2 },
     { "id": "silber", "name": "Silber", "text": "Gibt bei Auslösung zusätzlich 3 Schild je Etage", "shieldPerFloor": 3 },
     { "id": "quecksilber", "name": "Quecksilber", "text": "Der Funke durchquert den Raum doppelt so schnell", "costMult": 0.5 },
-    { "id": "kupfer", "name": "Kupfer", "text": "Löst auch den Raum darunter aus", "conduct": true },
+    { "id": "kupfer", "name": "Kupfer", "text": "Löst auch die Nachbarn aus, im Raster mit halber Wirkung", "conduct": true },
     { "id": "rost", "name": "Rost", "text": "Doppelte Wirkung, verfällt nach 6 Auslösungen", "mult": 2, "breaksAfter": 6 },
     { "id": "glas", "name": "Glas", "text": "Dreifache Wirkung, zerbricht beim ersten Treffer auf die Integrität", "mult": 3, "glass": true }
   ]
