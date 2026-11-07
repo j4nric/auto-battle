@@ -49,6 +49,8 @@ class Spark:
 	var pos := 0
 	var meter := 0.0
 	var discount := 0.0
+	## The room just fired was entered with a discount: it passes no discount on (no chains).
+	var chained := false
 	var loops := 0
 	var fresh := false
 
@@ -333,7 +335,7 @@ func _run_op(op: Dictionary, me: Fighter, room: RoomInst, mult: float, depth: in
 				return
 			activate(me, target, depth + 1, spark, _eval_terms(op.bonus, me, foe, room, mult))
 		"freeNext":
-			if spark != null:
+			if spark != null and not spark.chained:
 				spark.discount += float(op.amount)
 		"chargeOthers":
 			var add := _eval_terms(op.value, me, foe, room, mult)
@@ -450,6 +452,7 @@ func _step_fighter(f: Fighter) -> void:
 				break
 			spark.meter -= cost
 			if room != null:
+				spark.chained = spark.discount > 0.0
 				spark.discount = 0.0
 				if step[2]:
 					activate(f, room, 0, spark)

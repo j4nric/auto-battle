@@ -83,6 +83,8 @@ interface Spark {
   pos: number;
   meter: number;
   discount: number;
+  /** The room just fired was entered with a discount: it passes no discount on (no chains). */
+  chained: boolean;
   loops: number;
   fresh: boolean;
 }
@@ -175,7 +177,7 @@ function makeFighter(side: Side, tower: AnyTower, hp: number): Fighter {
   return {
     side, rooms, hp, maxHp: hp, path, speed: isGrid(tower) ? tower.width : 1,
     shield: 0, burn: 0, poison: 0, rust: 0, oil: 0,
-    sparks: rooms.length ? [{ pos: 0, meter: 0, discount: 0, loops: 0, fresh: false }] : [],
+    sparks: rooms.length ? [{ pos: 0, meter: 0, discount: 0, chained: false, loops: 0, fresh: false }] : [],
   };
 }
 
@@ -342,7 +344,7 @@ class Combat {
         } else this.runOps(op.else, c);
         return;
       case 'spawnSpark':
-        if (me.sparks.length < MAX_SPARKS) me.sparks.push({ pos: 0, meter: 0, discount: 0, loops: 0, fresh: true });
+        if (me.sparks.length < MAX_SPARKS) me.sparks.push({ pos: 0, meter: 0, discount: 0, chained: false, loops: 0, fresh: true });
         return;
       case 'advanceCounter':
         this.advanceCounter(me, room, depth, spark);
@@ -364,7 +366,7 @@ class Combat {
         return;
       }
       case 'freeNext':
-        if (spark) spark.discount += op.amount;
+        if (spark && !spark.chained) spark.discount += op.amount;
         return;
       case 'chargeOthers': {
         const n = evalTerms(op.value, me, foe, room, c.mult);
@@ -487,6 +489,7 @@ class Combat {
         if (spark.meter < cost) break;
         spark.meter -= cost;
         if (room) {
+          spark.chained = spark.discount > 0;
           spark.discount = 0;
           if (step.fire) this.activate(f, room, 0, spark);
         }

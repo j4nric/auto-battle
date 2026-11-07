@@ -82,6 +82,11 @@ cases.push({
   a: { rooms: [{ id: 'glockenseil', tier: 0, alloy: 'gold' }, { id: 'glockenspiel', tier: 0 }, { id: 'glockenspiel', tier: 2, alloy: 'glas' }], maxFloors: BASE_FLOORS },
   hpA: 2291, b: dummy, hpB: 2291,
 });
+cases.push({
+  name: 'hazard:quecksilber-chain',
+  a: { rooms: Array.from({ length: 8 }, () => ({ id: 'quecksilber', tier: 0 })), maxFloors: BASE_FLOORS },
+  hpA: 1334, b: dummy, hpB: 1334,
+});
 // Random towers of all sizes, tiers and alloys.
 const rng = new Rng(hashSeed('golden', 'fights'));
 for (let i = 0; i < 160; i++) {
