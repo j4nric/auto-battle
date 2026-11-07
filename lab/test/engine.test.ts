@@ -74,3 +74,13 @@ test('Kupfer erzeugt über den Umlauf keine Endlosschleife', () => {
   const res = fight(combo, 5000, tower('bollwerk', 'bollwerk', 'bollwerk', 'bollwerk'), 5000);
   assert.ok(res.ticks > 5, `Kampf endete nach ${res.ticks} Takten`);
 });
+
+test('a discounted room passes no discount on: quecksilber chains fire at most two rooms per tick', () => {
+  const chain = { rooms: Array.from({ length: 8 }, () => ({ id: 'quecksilber', tier: 0 })), maxFloors: 8 };
+  const foe = { rooms: [{ id: 'bollwerk', tier: 0 }], maxFloors: 8 };
+  const res = fight(chain, 1334, foe, 1334, { record: true });
+  for (const fr of res.frames!.slice(1, 6)) {
+    const fires = fr.events.filter((e) => e.side === 'a' && e.type === 'fire').length;
+    assert.ok(fires <= 2, `tick ${fr.tick}: ${fires} rooms fired`);
+  }
+});
