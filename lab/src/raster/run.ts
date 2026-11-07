@@ -8,8 +8,8 @@ import { RASTER_ROOMS, RASTER_SHOP, RASTER_FUSIONS } from './content.ts';
 import * as G from './tower.ts';
 
 export { HOURS };
-/** Integrity relative to the single column; tuned so fights last about as long. */
-export const RASTER = { hpMult: 2, rivalTierDiv: 1.25 };
+/** Integrity relative to the single column; rivalGold: extra gold per hour for shadow-run rivals. */
+export const RASTER = { hpMult: 2, rivalGold: 3 };
 export const playerHp = (hour: number): number => round(columnHp(hour) * RASTER.hpMult);
 export const price = (id: string, tier = 0): number => G.area(id) * 3 * (tier + 1);
 export const sellPrice = (id: string, tier = 0): number => Math.floor(price(id, tier) / 2);
@@ -135,27 +135,83 @@ export function previewBuy(run: Run, offer: number, upgrade: boolean, x = 0, y =
 }
 
 // ---------------------------------------------------------------- opponents
+/**
+ * Rivals are shadow runs (q14, 07.11.2026): same shop, same income, same rules as the player,
+ * played by the builder from hour 1 up to the fight's hour, without fights. Cheap enough for the
+ * game (no test fights), deterministic from the seed.
+ */
 export function generateRival(seed: number, hour: number, diff = 1): Opponent {
-  const rng = new Rng(hashSeed('raster-rival', seed, hour));
-  const guild = rng.pick(Object.keys(GUILDS));
-  const pool = RASTER_SHOP.filter((r) => r.guild === guild);
-  let t = G.emptyGrid(G.rowsFor(hour));
-  const cap = t.width * t.rows;
-  // Same budget as the single column: one cell per floor the rival would have there.
-  const target = Math.min(cap, 2 + hour);
-  const base = (hour - 1) / RASTER.rivalTierDiv;
-  for (let tries = 0; tries < 60 && G.usedCells(t) < target; tries++) {
-    const def = rng.chance(0.6) ? rng.pick(pool) : rng.pick(RASTER_SHOP);
-    if (G.usedCells(t) + G.area(def.id) > target) continue;
-    const spots = G.dropSpots(t, def.id);
-    if (!spots.length) continue;
-    const s = rng.pick(spots);
-    const tier = Math.min(3, Math.floor(base + rng.float()));
-    const alloy = hour >= 7 && rng.chance(0.15) ? rng.pick(ALLOY_IDS) : null;
-    t = G.place(t, { id: def.id, tier, alloy, x: s.x, y: s.y, rot: s.rot });
+  const run = createRun(hashSeed('raster-rival', seed, hour));
+  for (;;) {
+    run.gold += RASTER.rivalGold;
+    buildShop(run);
+    if (run.hour >= hour) break;
+    startHour(run);
   }
-  t = G.applyFusions(t).tower;
-  return { name: rivalName(guild), tower: t, hp: round(playerHp(hour) * diff), ghost: false };
+  return { name: rivalName(mainGuild(run)), tower: run.tower, hp: round(playerHp(hour) * diff), ghost: false };
+}
+
+/** Guild with the most cells in the tower; ties and empty towers go to the first run guild. */
+function mainGuild(run: Run): string {
+  let best = run.guilds[0];
+  let most = -1;
+  for (const g of run.guilds) {
+    const n = run.tower.rooms.reduce((s, r) => s + (RASTER_ROOMS[r.id].guild === g ? G.area(r.id) : 0), 0);
+    if (n > most) { most = n; best = g; }
+  }
+  return best;
+}
+
+/** Rooms of guild `guild` sharing an edge with the cells. */
+function sameGuildNeighbours(t: GridTower, cells: Array<[number, number]>, guild: string, skip: number): number {
+  let n = 0;
+  t.rooms.forEach((r, i) => {
+    if (i === skip || RASTER_ROOMS[r.id].guild !== guild) return;
+    const near = G.cellsOfRoom(r).some(([x, y]) => cells.some(([cx, cy]) => Math.abs(x - cx) + Math.abs(y - cy) === 1));
+    if (near) n++;
+  });
+  return n;
+}
+
+/**
+ * The builder's shop: rule of thumb, no test fights. Each step takes the best scored purchase:
+ * recipes first, then upgrades, then placements of the main guild next to their own guild.
+ * Rerolls up to twice when nothing fits. Spends everything.
+ */
+function buildShop(run: Run): void {
+  let rerolls = 0;
+  for (let guard = 0; guard < 24; guard++) {
+    const main = mainGuild(run);
+    let best: { a: Action; score: number } | null = null;
+    run.offers.forEach((o, i) => {
+      if (o.price > run.gold) return;
+      const guild = RASTER_ROOMS[o.id].guild;
+      const own = guild === main ? 4 : 0;
+      const up = previewBuy(run, i, true);
+      if (up) {
+        const score = 8 + own;
+        if (!best || score > best.score) best = { a: { t: 'buy', offer: i, upgrade: true, x: 0, y: 0, rot: 0 }, score };
+      }
+      for (const sp of G.dropSpots(run.tower, o.id)) {
+        const t = previewBuy(run, i, false, sp.x, sp.y, sp.rot);
+        if (!t) continue;
+        const fused = G.applyFusions(t).fused.length;
+        const cells = G.cellsOfRoom({ id: o.id, tier: o.tier, alloy: null, ...sp });
+        const score = 5 + own + 20 * fused + sameGuildNeighbours(run.tower, cells, guild, -1);
+        if (!best || score > best.score) best = { a: { t: 'buy', offer: i, upgrade: false, ...sp }, score };
+      }
+    });
+    if (best) {
+      act(run, (best as { a: Action }).a);
+      continue;
+    }
+    if (rerolls < 2 && run.gold >= run.rerollCost + 3 && G.usedCells(run.tower) < run.tower.width * run.tower.rows) {
+      act(run, { t: 'reroll' });
+      rerolls++;
+      continue;
+    }
+    break;
+  }
 }
 
 function opponentFor(run: Run, omen: Omen): Opponent {
