@@ -63,9 +63,20 @@ func _ready() -> void:
 	start.pressed.connect(func() -> void: _start_run(int(Time.get_unix_time_from_system()) % 1000000))
 	col.add_child(start)
 
+	var pair := HBoxContainer.new()
+	pair.add_theme_constant_override("separation", 8)
 	var fight := UhrStyle.button("Kampf ansehen")
+	fight.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	fight.add_theme_font_size_override("font_size", 16)
 	fight.pressed.connect(func() -> void: _open_fight(int(Time.get_unix_time_from_system()) % 100000, -1, 0))
-	col.add_child(fight)
+	pair.add_child(fight)
+	# The 3-wide grid tower (ADR 0008), playable as a preview until it replaces the column.
+	var raster := UhrStyle.button("Raster-Vorschau")
+	raster.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	raster.add_theme_font_size_override("font_size", 16)
+	raster.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://scenes/raster.tscn"))
+	pair.add_child(raster)
+	col.add_child(pair)
 
 	col.add_child(UhrStyle.label("Vorführ-Türme", 13, UhrStyle.MUTED))
 	var grid := GridContainer.new()
