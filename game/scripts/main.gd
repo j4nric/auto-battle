@@ -115,7 +115,7 @@ func _toggle(title: String, key: String, on: bool) -> Button:
 
 func _start_run(seed: int) -> void:
 	UhrRasterSession.new_run(seed)
-	get_tree().change_scene_to_file("res://scenes/raster.tscn")
+	UhrTransition.go("res://scenes/raster.tscn")
 
 
 func _continue_run() -> void:
@@ -124,12 +124,12 @@ func _continue_run() -> void:
 		UhrRasterSession.clear()
 		_start_run(int(Time.get_unix_time_from_system()) % 1000000)
 		return
-	get_tree().change_scene_to_file("res://scenes/raster.tscn")
+	UhrTransition.go("res://scenes/raster.tscn")
 
 
 func _open_fight(seed: int, showcase: int, hour: int) -> void:
 	CombatView.pending = UhrScenarios.build(seed, showcase, hour)
-	get_tree().change_scene_to_file("res://scenes/combat.tscn")
+	UhrTransition.go("res://scenes/combat.tscn")
 
 
 func _on_tick() -> void:

@@ -52,7 +52,7 @@ func _build_ui() -> void:
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 8)
 	var back := UhrStyle.button("Menü")
-	back.pressed.connect(func() -> void: get_tree().change_scene_to_file(MAIN_SCENE))
+	back.pressed.connect(func() -> void: UhrTransition.go(MAIN_SCENE))
 	head.add_child(back)
 	var titles := VBoxContainer.new()
 	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -354,7 +354,7 @@ func _choose_omen(id: String) -> void:
 		"mine": f.tower, "foe": f.oppTower, "hp_mine": int(f.hp), "hp_foe": int(f.oppHp),
 		"foe_name": f.opponent, "result": f,
 	}
-	get_tree().change_scene_to_file("res://scenes/combat.tscn")
+	UhrTransition.go("res://scenes/combat.tscn")
 
 
 # ------------------------------------------------------------------ input

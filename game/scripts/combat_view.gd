@@ -202,7 +202,7 @@ func _def(id: String) -> Dictionary:
 
 
 func _leave() -> void:
-	get_tree().change_scene_to_file(str(setup.get("return_scene", RUN_SCENE)) if _is_run() else MAIN_SCENE)
+	UhrTransition.go(str(setup.get("return_scene", RUN_SCENE)) if _is_run() else MAIN_SCENE)
 
 
 func _start_fight() -> void:
@@ -215,6 +215,8 @@ func _start_fight() -> void:
 	if _is_grid():
 		for side in ["a", "b"]:
 			towers[side].rows_shown = maxi(int(setup.mine.rows), int(setup.foe.rows))
+	for side in ["a", "b"]:
+		towers[side].modulate = Color.WHITE
 	towers.a.setup(setup.mine)
 	towers.b.setup(setup.foe)
 	bars.a.max_hp = int(setup.hp_mine)
@@ -231,6 +233,8 @@ func _start_fight() -> void:
 func _restart() -> void:
 	_pause()
 	frame = 0
+	for side in ["a", "b"]:
+		towers[side].modulate = Color.WHITE
 	if overlay:
 		overlay.queue_free()
 		overlay = null
@@ -376,6 +380,7 @@ func _show_summary() -> void:
 	var text := "Sieg" if w == "a" else ("Niederlage" if w == "b" else "Unentschieden")
 	UhrSound.play("win" if w == "a" else "lose")
 	UhrHaptics.buzz(60 if w == "a" else 150)
+	_finale(w)
 	var panel := PanelContainer.new()
 	var sb := UhrStyle.box(Color(0.19, 0.17, 0.25), 12, 0)
 	sb.set_content_margin_all(16)
@@ -419,6 +424,28 @@ func _show_summary() -> void:
 	panel.custom_minimum_size.x = 320
 	overlay.add_child(panel)
 	add_child(overlay)
+	# The result springs in after the finale had a moment.
+	panel.modulate.a = 0.0
+	panel.scale = Vector2(0.85, 0.85)
+	await get_tree().process_frame
+	panel.pivot_offset = panel.size / 2
+	var tw := panel.create_tween().set_parallel()
+	tw.tween_property(panel, "modulate:a", 1.0, 0.25).set_delay(0.45)
+	tw.tween_property(panel, "scale", Vector2.ONE, 0.35).set_delay(0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## The losing tower takes the last blow: sparks fly from every room of a beaten foe, a beaten
+## own tower shakes and dims.
+func _finale(w: String) -> void:
+	if w == "":
+		return
+	var loser = towers.b if w == "a" else towers.a
+	if not loser.has_method("burst"):
+		return
+	loser.shake(10.0)
+	for i in loser.tower.rooms.size():
+		loser.burst(i, 14, UhrStyle.BRASS if w == "a" else UhrStyle.FOE)
+	loser.create_tween().tween_property(loser, "modulate", Color(0.55, 0.55, 0.6), 0.5)
 
 
 ## Sums of a tower's room stats: [damage, shield, heal, burn, poison, activations].
