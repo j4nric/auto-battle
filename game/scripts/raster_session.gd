@@ -16,8 +16,8 @@ static func new_run(seed: int) -> UhrRasterRun:
 
 
 ## Applies an action to the current run and saves. Returns false if it was rejected.
-static func act(a: Dictionary) -> bool:
-	if run == null or not run.act(a):
+static func act(a: Dictionary, record := false) -> bool:
+	if run == null or not run.act(a, record):
 		return false
 	save()
 	return true

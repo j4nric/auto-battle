@@ -137,7 +137,15 @@ func _build_ui() -> void:
 	tower_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	tower_row.add_theme_constant_override("separation", 22)
 	for side in ["a", "b"]:
-		var tv := TowerView.new()
+		# Grid towers (ADR 0008) get the grid view in compact mode; it offers the same playback
+		# interface as TowerView (setup, apply_frame, flash, pop, room_tapped).
+		var tv: Control
+		if _is_grid():
+			var gv := GridView.new()
+			gv.compact = true
+			tv = gv
+		else:
+			tv = TowerView.new()
 		tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tv.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		tv.room_tapped.connect(_show_room.bind(side))
@@ -181,8 +189,17 @@ func _is_run() -> bool:
 	return setup.get("mode", "") == "run"
 
 
+func _is_grid() -> bool:
+	return setup.mine.get("kind", "") == "grid"
+
+
+## Room definition from the content the tower uses (grid towers: raster.json).
+func _def(id: String) -> Dictionary:
+	return UhrContent.raster_room(id) if _is_grid() else UhrContent.room(id)
+
+
 func _leave() -> void:
-	get_tree().change_scene_to_file(RUN_SCENE if _is_run() else MAIN_SCENE)
+	get_tree().change_scene_to_file(str(setup.get("return_scene", RUN_SCENE)) if _is_run() else MAIN_SCENE)
 
 
 func _start_fight() -> void:
@@ -294,7 +311,7 @@ func _apply(fr: Dictionary, animate: float) -> void:
 
 
 func _show_event(ev: Dictionary) -> void:
-	var tv: TowerView = towers[ev.side]
+	var tv = towers[ev.side]  # TowerView or GridView
 	var idx := int(ev.idx)
 	var n := int(ev.get("n", 0))
 	match ev.type:
@@ -378,7 +395,7 @@ func _top_rooms(k: int) -> Array[String]:
 		if s[1] > 0: parts.append("%d Schild" % s[1])
 		if s[2] > 0: parts.append("%d Heilung" % s[2])
 		if parts.is_empty(): parts.append("%d× ausgelöst" % s[5])
-		out.append("%s: %s" % [UhrContent.room(setup.mine.rooms[i].id).name, ", ".join(parts)])
+		out.append("%s: %s" % [_def(setup.mine.rooms[i].id).name, ", ".join(parts)])
 	return out
 
 
@@ -387,7 +404,7 @@ func _show_room(i: int, side: String) -> void:
 		sheet.queue_free()
 	var tower: Dictionary = setup.mine if side == "a" else setup.foe
 	var r: Dictionary = tower.rooms[i]
-	var def := UhrContent.room(r.id)
+	var def := _def(r.id)
 	var tier := int(r.get("tier", 0)) if r.get("tier") != null else 0
 	sheet = PanelContainer.new()
 	var sb := UhrStyle.box(Color(0.19, 0.17, 0.25), 14, 0)
@@ -395,7 +412,8 @@ func _show_room(i: int, side: String) -> void:
 	sheet.add_theme_stylebox_override("panel", sb)
 	var col := VBoxContainer.new()
 	col.add_child(UhrStyle.label(def.name, 20, UhrStyle.TEXT))
-	var facts := "%s · Stufe %s (%s) · %d %s" % [UhrContent.guild(def.guild).name, ["I", "II", "III", "IV"][tier], UhrContent.tier_name(tier), int(def.height), "Etage" if int(def.height) == 1 else "Etagen"]
+	var unit := ("Feld" if int(def.height) == 1 else "Felder") if _is_grid() else ("Etage" if int(def.height) == 1 else "Etagen")
+	var facts := "%s · Stufe %s (%s) · %d %s" % [UhrContent.guild(def.guild).name, ["I", "II", "III", "IV"][tier], UhrContent.tier_name(tier), int(def.height), unit]
 	if def.get("fusion", false):
 		facts += " · Verschmelzung"
 	col.add_child(UhrStyle.label(facts, 13, UhrStyle.MUTED))
