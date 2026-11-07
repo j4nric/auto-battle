@@ -31,6 +31,7 @@ func _ready() -> void:
 		run = UhrRasterSession.new_run(int(Time.get_unix_time_from_system()) % 1000000)
 	_build_ui()
 	_refresh()
+	_announce_growth()
 
 
 func _build_ui() -> void:
@@ -314,6 +315,17 @@ func _render_alloy() -> void:
 func _render_over() -> void:
 	var text := "Mitternacht! Dein Turm schlägt." if run.midnight else "Dein Turm ist eingestürzt."
 	hint_label.text = "%s %d Siege in %d Stunden." % [text, run.wins, run.hour]
+	var title := UhrStyle.label("Mitternacht!" if run.midnight else "Eingestürzt", 30, UhrStyle.BRASS if run.midnight else UhrStyle.FOE)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bottom.add_child(title)
+	var found: Array = run.fusions_found.map(func(id: String) -> String: return UhrContent.raster_room(id).name)
+	var facts := "%d Siege · %d Räume · %d von %d Feldern" % [run.wins, run.tower.rooms.size(), UhrRasterTower.used_cells(run.tower), UhrRasterTower.WIDTH * int(run.tower.rows)]
+	if not found.is_empty():
+		facts += "\nRezepte: " + ", ".join(found)
+	var facts_l := UhrStyle.label(facts, 14, UhrStyle.MUTED)
+	facts_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bottom.add_child(facts_l)
+	_celebrate_over()
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	var report := UhrStyle.button("Run melden")
@@ -322,10 +334,54 @@ func _render_over() -> void:
 	again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	again.pressed.connect(func() -> void:
 		UhrRasterSession.new_run(int(Time.get_unix_time_from_system()) % 1000000)
-		get_tree().reload_current_scene())
+		UhrTransition.go("res://scenes/raster.tscn"))
 	row.add_child(report)
 	row.add_child(again)
 	bottom.add_child(row)
+
+
+## The hour whose new row was already shown, so leaving and re-entering does not repeat it.
+static var _growth_shown := -1
+
+
+## A new hour that opened a row: the row glows, a chime plays, a toast says so.
+func _announce_growth() -> void:
+	if run.phase != "shop" or run.hour <= 1 or run.hour == _growth_shown:
+		return
+	if UhrRasterTower.rows_for(run.hour) <= UhrRasterTower.rows_for(run.hour - 1):
+		return
+	_growth_shown = run.hour
+	await get_tree().process_frame
+	grid.glow_row(int(run.tower.rows) - 1)
+	UhrSound.play("row")
+	UhrHaptics.buzz(20)
+	_toast("Der Turm wächst: eine Reihe mehr!")
+
+
+## Run end, once: midnight rings the bells and sparks fly from every room; a collapse shakes the
+## tower and dims it.
+var _over_shown := false
+
+
+func _celebrate_over() -> void:
+	if _over_shown:
+		return
+	_over_shown = true
+	await get_tree().process_frame
+	if run.midnight:
+		for k in 3:
+			get_tree().create_timer(0.45 * k).timeout.connect(func() -> void:
+				UhrSound.play("bell")
+				UhrHaptics.buzz(40)
+				for i in run.tower.rooms.size():
+					grid.burst(i, 10, UhrStyle.BRASS)
+				grid.shake(4.0))
+		get_tree().create_timer(1.4).timeout.connect(func() -> void: UhrSound.play("win"))
+	else:
+		UhrSound.play("lose")
+		UhrHaptics.buzz(150)
+		grid.shake(10.0)
+		grid.create_tween().tween_property(grid, "modulate", Color(0.5, 0.5, 0.55), 0.8)
 
 
 func _last_fight_text() -> String:
