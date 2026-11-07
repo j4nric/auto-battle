@@ -57,3 +57,19 @@ static func clear() -> void:
 	run = null
 	if has_save():
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+
+
+## Short summary of the saved run for the start screen, or "" if there is none.
+static func saved_summary() -> String:
+	if not has_save():
+		return ""
+	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	if typeof(d) != TYPE_DICTIONARY:
+		return ""
+	return "Stunde %d, %d Siege" % [int(d.get("hour", 1)), int(d.get("wins", 0))]
+
+
+## Bug report code: seed and actions, base64. The lab replays it: node tools/replay.ts UHR2.…
+static func report_code() -> String:
+	var payload := { "v": 2, "kind": "raster", "build": UhrSession.build_id(), "seed": run.seed, "hour": run.hour, "wins": run.wins, "actions": run.actions }
+	return "UHR2." + Marshalls.utf8_to_base64(JSON.stringify(payload))
