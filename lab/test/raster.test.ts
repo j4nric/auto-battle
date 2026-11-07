@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fight, snakeOrder, type GridTower } from '../src/engine/combat.ts';
 import { RASTER_ROOMS, RASTER_FUSIONS, cellsOf } from '../src/raster/content.ts';
+import { ROOMS } from '../src/content.ts';
 import * as G from '../src/raster/tower.ts';
 import * as R from '../src/raster/run.ts';
 import { RasterTinker } from '../src/raster/bots.ts';
@@ -9,8 +10,21 @@ import { RasterTinker } from '../src/raster/bots.ts';
 test('raster rooms: shape size matches height, fusion results fit their pattern', () => {
   for (const r of Object.values(RASTER_ROOMS)) assert.equal(cellsOf(r).length, r.height, r.id);
   for (const f of RASTER_FUSIONS) {
-    assert.deepEqual(cellsOf(RASTER_ROOMS[f.result]), [[0, 0], [0, 1]], f.result);
-    for (const p of f.pattern) assert.equal(cellsOf(RASTER_ROOMS[p]).length, 1, p);
+    const union = new Set(f.parts.flatMap((p) => p.cells.map(([x, y]) => `${x},${y}`)));
+    for (const [x, y] of cellsOf(RASTER_ROOMS[f.result])) assert.ok(union.has(`${x},${y}`), `${f.result} must lie within its parts`);
+    for (const p of f.parts) {
+      const rots = [0, 1, 2, 3].map((r) => cellsOf(RASTER_ROOMS[p.id], r).map(String).join(';'));
+      const min = (cs: Array<[number, number]>) => [Math.min(...cs.map((c) => c[0])), Math.min(...cs.map((c) => c[1]))];
+      const [mx, my] = min(p.cells);
+      const norm = p.cells.map(([x, y]) => [x - mx, y - my] as [number, number]).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+      assert.ok(rots.includes(norm.map(String).join(';')), `${f.result}: part ${p.id} cells must be a rotation of its shape`);
+    }
+    assert.deepEqual(f.parts[0].cells[0], [0, 0], `${f.result}: first cell of the first part is the anchor`);
+  }
+  // Every room of the column game exists on the grid with the same effects.
+  for (const id of Object.keys(ROOMS)) {
+    assert.ok(RASTER_ROOMS[id], `${id} missing in raster.json`);
+    assert.deepEqual(RASTER_ROOMS[id].on, ROOMS[id].on, `${id}: effects differ from content.json`);
   }
 });
 
@@ -44,6 +58,14 @@ test('pattern recipe: echo right on top of quecksilber fuses into a 1x2 zeitschl
   const { tower, fused } = G.applyFusions(t);
   assert.deepEqual(fused, ['zeitschleife']);
   assert.deepEqual(tower.rooms, [{ id: 'zeitschleife', tier: 2, alloy: null, x: 1, y: 0, rot: 0 }]);
+  // Three parts: Kleine Glocke and Glockenseil side by side, the Große Glocke lying on top.
+  let g = G.emptyGrid(4);
+  g = G.place(g, { id: 'kleineGlocke', tier: 0, x: 1, y: 1, rot: 0 });
+  g = G.place(g, { id: 'glockenseil', tier: 1, x: 2, y: 1, rot: 0 });
+  g = G.place(g, { id: 'grosseGlocke', tier: 0, x: 1, y: 2, rot: 1 });
+  const gs = G.applyFusions(g);
+  assert.deepEqual(gs.fused, ['glockenspiel']);
+  assert.deepEqual(gs.tower.rooms, [{ id: 'glockenspiel', tier: 1, alloy: null, x: 1, y: 1, rot: 0 }]);
   // Side by side does not fuse.
   let s = G.emptyGrid(3);
   s = G.place(s, { id: 'quecksilber', x: 0, y: 0, rot: 0 });

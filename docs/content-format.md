@@ -95,4 +95,7 @@ kommt ein Feld dazu:
 Platzierte Räume tragen `x`, `y` und `rot` (Vierteldrehungen im Uhrzeigersinn). Im Raster gilt:
 `rel: "above"` wirkt auf Räume, die direkt über einem Feld der Quelle liegen, `rel: "any"` auf alle
 Räume mit gemeinsamer Kante. „Der Raum darunter“ (`retrigger`, `timesIfBelowTag`, Kupfer) ist der
-Raum davor auf dem Funkenweg. Rezepte sind Muster: `pattern[1]` liegt direkt über `pattern[0]`.
+Raum davor auf dem Funkenweg. Rezepte sind Muster: `parts` nennt jeden Teil mit den Feldern, die er
+genau belegen muss, relativ zum ersten Feld des ersten Teils. Das Ergebnis entsteht dort mit
+Drehung 0 und liegt innerhalb der Teile, eine Verschmelzung macht also Platz frei. Beispiel
+Glockenspiel: Kleine Glocke und Glockenseil nebeneinander, darüber liegend die Große Glocke.

@@ -84,10 +84,14 @@ func _called_rooms() -> Dictionary:
 		ids[r.id] = true
 	var called := {}
 	for f in UhrContent.raster_fusions():
-		if ids.has(f.pattern[0]):
-			called[f.pattern[1]] = true
-		if ids.has(f.pattern[1]):
-			called[f.pattern[0]] = true
+		var started := false
+		for part in f.parts:
+			if ids.has(part.id):
+				started = true
+		if started:
+			for part in f.parts:
+				if not ids.has(part.id):
+					called[part.id] = true
 	return called
 
 

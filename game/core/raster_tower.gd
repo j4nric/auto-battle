@@ -4,9 +4,9 @@ extends RefCounted
 ## Dictionaries { kind: "grid", width, rows, rooms: [{ id, tier, alloy, x, y, rot }] }.
 
 
-## Pattern recipes: pattern[1] directly on top of pattern[0] (both single cells) fuse into the
-## result, a 1x2 column at the lower part's position, with the highest tier and the first alloy.
-## Returns { tower, fused }.
+## Pattern recipes (raster.json "fusions"): when every part of a recipe sits on exactly its cells
+## (relative to the first part's first cell), the parts fuse into the result there, rotation 0,
+## with the highest tier and the first alloy in part order. Returns { tower, fused }.
 static func apply_fusions(tower: Dictionary) -> Dictionary:
 	var rooms: Array = tower.rooms.duplicate(true)
 	var fused: Array[String] = []
@@ -14,29 +14,21 @@ static func apply_fusions(tower: Dictionary) -> Dictionary:
 	while changed:
 		changed = false
 		for f in UhrContent.raster_fusions():
-			var lo := -1
-			var hi := -1
-			for i in rooms.size():
-				if rooms[i].id != f.pattern[0]:
-					continue
-				hi = _above(rooms, i, f.pattern[1])
-				if hi >= 0:
-					lo = i
-					break
-			if lo < 0:
+			var hit := _match(rooms, f)
+			if hit.is_empty():
 				continue
-			var a: Dictionary = rooms[lo]
-			var b: Dictionary = rooms[hi]
-			var alloy: Variant = a.get("alloy") if a.get("alloy") != null else b.get("alloy")
-			var merged := {
-				"id": f.result, "tier": maxi(_tier(a), _tier(b)), "alloy": alloy,
-				"x": int(a.x), "y": int(a.y), "rot": 0,
-			}
+			var used: Array = hit.used
+			var tier := 0
+			var alloy: Variant = null
+			for k in used:
+				tier = maxi(tier, _tier(rooms[k]))
+				if alloy == null and rooms[k].get("alloy") != null:
+					alloy = rooms[k].alloy
 			var rest: Array = []
-			for i in rooms.size():
-				if i != lo and i != hi:
-					rest.append(rooms[i])
-			rest.append(merged)
+			for k in rooms.size():
+				if not used.has(k):
+					rest.append(rooms[k])
+			rest.append({ "id": f.result, "tier": tier, "alloy": alloy, "x": hit.x, "y": hit.y, "rot": 0 })
 			rooms = rest
 			fused.append(f.result)
 			changed = true
@@ -46,12 +38,40 @@ static func apply_fusions(tower: Dictionary) -> Dictionary:
 	return { "tower": out if not fused.is_empty() else tower, "fused": fused }
 
 
-static func _above(rooms: Array, lo: int, id: String) -> int:
-	for j in rooms.size():
-		var b: Dictionary = rooms[j]
-		if b.id == id and int(b.x) == int(rooms[lo].x) and int(b.y) == int(rooms[lo].y) + 1:
-			return j
-	return -1
+## First match of recipe f: { used: [room indices in part order], x, y } or empty.
+static func _match(rooms: Array, f: Dictionary) -> Dictionary:
+	for a in rooms.size():
+		if rooms[a].id != f.parts[0].id:
+			continue
+		var anchor: Array = _abs_cells(rooms[a])[0]
+		var used: Array = []
+		for part in f.parts:
+			var want: Array = []
+			for c in part.cells:
+				want.append([anchor[0] + int(c[0]), anchor[1] + int(c[1])])
+			want.sort()
+			var found := -1
+			for k in rooms.size():
+				if used.has(k) or rooms[k].id != part.id:
+					continue
+				var got := _abs_cells(rooms[k])
+				got.sort()
+				if got == want:
+					found = k
+					break
+			if found < 0:
+				break
+			used.append(found)
+		if used.size() == f.parts.size():
+			return { "used": used, "x": anchor[0], "y": anchor[1] }
+	return {}
+
+
+static func _abs_cells(r: Dictionary) -> Array:
+	var out: Array = []
+	for c in UhrContent.cells_of(UhrContent.raster_room(r.id), _rot(r)):
+		out.append([int(r.x) + c[0], int(r.y) + c[1]])
+	return out
 
 
 static func _tier(r: Dictionary) -> int:

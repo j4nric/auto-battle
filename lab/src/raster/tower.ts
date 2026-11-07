@@ -101,26 +101,40 @@ export function setRoom(t: GridTower, idx: number, patch: Partial<GridRoom>): Gr
 }
 
 /**
- * Pattern recipes: pattern[1] sitting directly on top of pattern[0] (both single cells) fuse into
- * the result, a 1x2 column at the lower part's position. The result takes the highest tier and
- * the first alloy.
+ * Pattern recipes (see PatternFusion): when every part of a recipe sits on exactly its cells,
+ * the parts fuse into the result at the first part's first cell, with the highest tier and the
+ * first alloy in part order. Recipes and rooms are tried in order, until none matches.
  */
 export function applyFusions(t: GridTower): { tower: GridTower; fused: string[] } {
   let rooms = t.rooms;
   const fused: string[] = [];
+  const key = (cells: Array<[number, number]>) => cells.map(([x, y]) => `${x},${y}`).sort().join(';');
   for (let changed = true; changed; ) {
     changed = false;
-    for (const f of RASTER_FUSIONS) {
-      const lo = rooms.findIndex((a) => a.id === f.pattern[0] && rooms.some((b) => b.id === f.pattern[1] && b.x === a.x && b.y === a.y + 1));
-      if (lo < 0) continue;
-      const a = rooms[lo];
-      const hi = rooms.findIndex((b) => b.id === f.pattern[1] && b.x === a.x && b.y === a.y + 1);
-      const b = rooms[hi];
-      const merged: GridRoom = { id: f.result, tier: Math.max(a.tier ?? 0, b.tier ?? 0), alloy: a.alloy ?? b.alloy ?? null, x: a.x, y: a.y, rot: 0 };
-      rooms = [...rooms.filter((_, i) => i !== lo && i !== hi), merged];
-      fused.push(f.result);
-      changed = true;
-      break;
+    outer: for (const f of RASTER_FUSIONS) {
+      for (let a = 0; a < rooms.length; a++) {
+        if (rooms[a].id !== f.parts[0].id) continue;
+        const [ax, ay] = cellsOfRoom(rooms[a])[0];
+        const used: number[] = [];
+        for (const part of f.parts) {
+          const want = key(part.cells.map(([x, y]) => [ax + x, ay + y] as [number, number]));
+          const j = rooms.findIndex((r, k) => !used.includes(k) && r.id === part.id && key(cellsOfRoom(r)) === want);
+          if (j < 0) break;
+          used.push(j);
+        }
+        if (used.length !== f.parts.length) continue;
+        const parts = used.map((k) => rooms[k]);
+        const merged: GridRoom = {
+          id: f.result,
+          tier: Math.max(...parts.map((p) => p.tier ?? 0)),
+          alloy: parts.find((p) => p.alloy)?.alloy ?? null,
+          x: ax, y: ay, rot: 0,
+        };
+        rooms = [...rooms.filter((_, k) => !used.includes(k)), merged];
+        fused.push(f.result);
+        changed = true;
+        break outer;
+      }
     }
   }
   return { tower: fused.length ? { ...t, rooms } : t, fused };
