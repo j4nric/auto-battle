@@ -6,7 +6,8 @@ extends RefCounted
 ## Random draws must happen in exactly the lab's order.
 
 const HP_MULT := 2.0
-const RIVAL_TIER_DIV := 1.25
+## Extra gold per hour for shadow-run rivals (they skip the omens' gold).
+const RIVAL_GOLD := 3
 
 var seed: int
 var rng: UhrRng
@@ -174,34 +175,89 @@ func omens_for() -> Array:
 	return r.shuffle(["schwach", "normal", "elite", "haendler"]).slice(0, 3).map(func(k: String) -> Dictionary: return UhrRun._omen(k))
 
 
+## Rivals are shadow runs (q14): same shop, income and rules as the player, played by the
+## builder from hour 1 up to the fight's hour, without fights. Mirrors the lab exactly.
 static func generate_rival(p_seed: int, h: int, diff: float) -> Dictionary:
-	var r := UhrRng.new(UhrRng.hash_seed(["raster-rival", p_seed, h]))
-	var guild: String = r.pick(UhrContent.data().guilds.keys())
-	var shop := _shop_rooms()
-	var pool: Array = shop.filter(func(x: Dictionary) -> bool: return x.guild == guild)
-	var t := UhrRasterTower.empty_grid(UhrRasterTower.rows_for(h))
-	var cap := int(t.width) * int(t.rows)
-	# Same budget as the single column: one cell per floor the rival would have there.
-	var target := mini(cap, 2 + h)
-	var base := (h - 1) / RIVAL_TIER_DIV
-	var alloy_ids: Array = UhrContent.data().alloys.map(func(a: Dictionary) -> String: return a.id)
-	for tries in 60:
-		if UhrRasterTower.used_cells(t) >= target:
+	var r := create(UhrRng.hash_seed(["raster-rival", p_seed, h]))
+	while true:
+		r.gold += RIVAL_GOLD
+		r._build_shop()
+		if r.hour >= h:
 			break
-		var def: Dictionary = r.pick(pool) if r.chance(0.6) else r.pick(shop)
-		if UhrRasterTower.used_cells(t) + UhrRasterTower.area(def.id) > target:
+		r._start_hour()
+	return { "name": UhrRun.rival_name(r._main_guild()), "tower": r.tower, "hp": UhrCombat.rnd(player_hp(h) * diff), "ghost": false }
+
+
+## Guild with the most cells in the tower; ties and an empty tower go to the first run guild.
+func _main_guild() -> String:
+	var best: String = guilds[0]
+	var most := -1
+	for g in guilds:
+		var n := 0
+		for rm in tower.rooms:
+			if UhrContent.raster_room(rm.id).guild == g:
+				n += UhrRasterTower.area(rm.id)
+		if n > most:
+			most = n
+			best = g
+	return best
+
+
+static func _same_guild_neighbours(t: Dictionary, cells: Array, guild: String) -> int:
+	var n := 0
+	for rm in t.rooms:
+		if UhrContent.raster_room(rm.id).guild != guild:
 			continue
-		var spots := UhrRasterTower.drop_spots(t, def.id)
-		if spots.is_empty():
+		var near := false
+		for c in UhrRasterTower._abs_cells(rm):
+			for cc in cells:
+				if absi(int(c[0]) - int(cc[0])) + absi(int(c[1]) - int(cc[1])) == 1:
+					near = true
+					break
+			if near:
+				break
+		if near:
+			n += 1
+	return n
+
+
+## The builder's shop: rule of thumb, no test fights. Recipes first, then upgrades, then the
+## main guild next to its own rooms. Rerolls up to twice when nothing fits. Spends everything.
+func _build_shop() -> void:
+	var rerolls := 0
+	for guard in 24:
+		var main := _main_guild()
+		var best: Dictionary = {}
+		var best_score := -1
+		for i in offers.size():
+			var o: Dictionary = offers[i]
+			if int(o.price) > gold:
+				continue
+			var guild: String = UhrContent.raster_room(o.id).guild
+			var own := 4 if guild == main else 0
+			if preview_buy(i, true) != null:
+				var sc := 8 + own
+				if best.is_empty() or sc > best_score:
+					best = { "t": "buy", "offer": i, "upgrade": true, "x": 0, "y": 0, "rot": 0 }
+					best_score = sc
+			for sp in UhrRasterTower.drop_spots(tower, o.id):
+				var t: Variant = preview_buy(i, false, int(sp.x), int(sp.y), int(sp.rot))
+				if t == null:
+					continue
+				var fused: int = UhrRasterTower.apply_fusions(t).fused.size()
+				var cells := UhrRasterTower._abs_cells({ "id": o.id, "x": sp.x, "y": sp.y, "rot": sp.rot })
+				var sc := 5 + own + 20 * fused + _same_guild_neighbours(tower, cells, guild)
+				if best.is_empty() or sc > best_score:
+					best = { "t": "buy", "offer": i, "upgrade": false, "x": int(sp.x), "y": int(sp.y), "rot": int(sp.rot) }
+					best_score = sc
+		if not best.is_empty():
+			act(best)
 			continue
-		var s: Dictionary = r.pick(spots)
-		var tier := mini(3, int(floorf(base + r.next_float())))
-		var alloy: Variant = r.pick(alloy_ids) if h >= 7 and r.chance(0.15) else null
-		var rooms: Array = t.rooms.duplicate()
-		rooms.append({ "id": def.id, "tier": tier, "alloy": alloy, "x": s.x, "y": s.y, "rot": s.rot })
-		t = UhrRasterTower.with_rooms(t, rooms)
-	t = UhrRasterTower.apply_fusions(t).tower
-	return { "name": UhrRun.rival_name(guild), "tower": t, "hp": UhrCombat.rnd(player_hp(h) * diff), "ghost": false }
+		if rerolls < 2 and gold >= reroll_cost + 3 and UhrRasterTower.used_cells(tower) < int(tower.width) * int(tower.rows):
+			act({ "t": "reroll" })
+			rerolls += 1
+			continue
+		break
 
 
 func _next_hour() -> void:
