@@ -1,6 +1,6 @@
 # 0008: Der Turm wird ein Raster, drei Felder breit
 
-Datum: 2026-11-07 · Status: Angenommen, umgesetzt in M5 (seit 07.11.2026 das Hauptspiel)
+Datum: 2026-11-07 · Status: Angenommen, umgesetzt in M5 (seit 07.11.2026 das Hauptspiel). Der Punkt „Nachbarn“ ist durch ADR 0009 ersetzt, die Gegner durch ADR 0010.
 
 ## Kontext
 
