@@ -76,11 +76,12 @@ Deine Gegner sind rivalisierende Uhrmacher:innen. Auch sie bauen Türme und woll
 
 > **Umstellung auf das Raster (ADR 0008, 07.11.2026):** Der Turm wird 3 Felder breit und wächst
 > von 3×3 auf 3×8. Räume haben Formen (Rechtecke und einige L-Formen, drehbar), der Funke läuft
-> als Schlange Reihe für Reihe. Nachbarn sind alle Räume mit gemeinsamer Kante, aus „der Raum
-> darunter“ wird „der Raum davor auf dem Funkenweg“, Rezepte werden zu Mustern. Umbauen geht
-> außerhalb des Kampfs jederzeit. Seit dem 07.11.2026 spielt das Spiel im Raster (M5). Räume mit
-> Formen und eigenen Werten stehen in `game/data/raster.json`, die Beschreibung unten zu Etagen gilt
-> nur noch für den alten Spaltenturm. Messungen: `docs/balance/2026-11-07-raster-balance.md`.
+> als Schlange Reihe für Reihe. Nachbarn sind alle Räume mit gemeinsamer Kante, auch für Wirkungen,
+> die früher „der Raum darunter“ hießen (ADR 0009). Rezepte werden zu Mustern. Umbauen geht
+> außerhalb des Kampfs jederzeit und kostenlos (q13). Seit dem 07.11.2026 spielt das Spiel im Raster
+> (M5). Räume mit Formen und eigenen Werten stehen in `game/data/raster.json`, die Beschreibung unten
+> zu Etagen gilt nur noch für den alten Spaltenturm. Jüngste Messung:
+> `docs/balance/2026-11-07-balance-gegner.md`.
 
 Jeder Raum hat:
 
@@ -143,8 +144,10 @@ Jede **Stunde** besteht aus drei kurzen Phasen:
    „Rostende Ruine: Elite mit Rost, Beute: garantierte Legierung“, „Wandernder Händler: kein
    Kampf, Rabatt-Shop“. Der Spieler gestaltet so selbst Risiko und Beute, wie beim Legen der
    Loop-Hero-Kacheln.
-3. **Kampf:** Auto Battle gegen Monster (Stunde 1–6) oder Geister-Türme anderer Spieler
-   (Stunde 7–12). Stunde 4 und 8 sind Elite-Gegner, 12 ist Mitternacht (Boss).
+3. **Kampf:** Auto Battle gegen eine rivalisierende Uhrmacher:in. Ihr Turm ist ein Schatten-Run:
+   ein eigener Run nach denselben Regeln, der bis zur Kampfstunde nur die Werkstatt spielt
+   (ADR 0010). Später ersetzen Geister-Türme anderer Spieler einen Teil davon (M8). Stunde 4 und 8
+   sind Elite-Gegner, 12 ist Mitternacht (Boss).
 
 Verlieren kostet einen von **drei Rissen**. Der dritte Riss stürzt den Turm ein.
 
@@ -159,9 +162,11 @@ Mobile entscheidend ist.
 
 ## 6. Warum jeder Run anders ist
 
-1. **Zunft-Rotation (Dominion-Prinzip):** Es gibt 9 Zünfte (Raum-Familien). Pro Run sind nur
-   4 aktiv, sichtbar beim Start. Der Pool erzwingt andere Synergien statt immer denselben Build.
-2. **Uhrmacher:in** (Held) biased den Pool und gibt ein Turm-Passiv. Start mit fünf:
+1. **Zunft-Rotation (Dominion-Prinzip):** Pro Run ist nur ein Teil der Zünfte (Raum-Familien) aktiv,
+   sichtbar beim Start. Der Pool erzwingt andere Synergien statt immer denselben Build. Stand
+   heute: 4 Zünfte (Wehr, Uhrwerk, Glocke, Alchemie), davon 3 je Run; Ziel sind mehr Zünfte.
+2. **Uhrmacher:in** (Held) biased den Pool und gibt ein Turm-Passiv. Welche es zum Start gibt, ist
+   offen (Cockpit q18). Die ursprüngliche Idee waren fünf:
    - *Die Glöcknerin* (Zähler, große Schläge)
    - *Der Alchemist* (Brand, Gift)
    - *Die Tierbändigerin* (Kreaturen, die mitkämpfen)
@@ -169,8 +174,8 @@ Mobile entscheidend ist.
    - *Die Zeitdiebin* (Takt-Manipulation, Doppelfunke)
 3. **Vorzeichen** steuern Risiko und Beute pro Stunde.
 4. **Legierungen** und **Verschmelzungen** verändern vorhandene Räume unvorhersehbar.
-5. **Monster-Builds** zeigen Kombinationen, auf die man selbst nicht gekommen wäre, und
-   lassen ihre Räume fallen.
+5. **Gegnertürme** zeigen Kombinationen, auf die man selbst nicht gekommen wäre. Sie entstehen
+   nach denselben Regeln wie der eigene Turm, auch mit Rezepten.
 6. **Tagesseed** („Stundenlauf“) für ein tägliches, vergleichbares Rennen.
 
 ---
@@ -179,18 +184,21 @@ Mobile entscheidend ist.
 
 Shop-/Bau-Phase:
 
-- oben: Stunde, Gold, Risse, Uhrmacher:in
-- Mitte: der eigene Turm, 8–12 Etagen, alle sichtbar ohne Scrollen
-- unten (Daumenzone): 3 Angebote plus Reroll/Weiter
-- Platzieren per **Tippen und Tippen** (Angebot wählen, Etage wählen), Drag optional.
-  Long-Press öffnet die Raumdetails mit Tags und Nachbar-Bezügen.
-- Beim Antippen eines Raums leuchten die Räume auf, mit denen er interagiert (Synergie-Funken).
+- oben: Stunde, Gold, Leben, Hinweiszeile
+- Mitte: der eigene Turm, 3 Felder breit, nur so hoch wie die offenen Reihen plus eine Reihe
+  Vorschau auf das Wachstum; alles sichtbar ohne Scrollen
+- unten (Daumenzone): die Angebote als Zeilen mit Wirkung, Preis und Größe, dazu Reroll/Weiter
+- Platzieren per **Ziehen** (Angebot in den Turm, Raum im Turm verschieben) oder per **Tippen**
+  (Angebot wählen, Feld wählen, nochmal tippen). Drehen per Knopf.
+- Beim Platzieren und bei einem gewählten Raum sind die Nachbarn umrandet; vervollständigt die
+  Vorschau ein Rezept, wird sie messingfarben.
 
 Kampf-Phase:
 
-- zwei Türme nebeneinander, eigener links, Gegner rechts
-- jeder Raum nur Icon, Tag-Farbe und eine Kennzahl; Zahlen poppen beim Funken auf
-- unten: HP-Balken beider Türme, Speed, Skip
+- zwei Türme nebeneinander, eigener links, Gegner rechts, beide so hoch wie der höhere
+- jeder Raum mit Name (bei Bedarf zweizeilig), Stufe und Gildenfarbe; Zahlen poppen beim Funken auf
+- oben: Integritätsbalken beider Türme; unten: Nochmal, Start/Pause, Takt, Tempo, Neu
+- danach eine Zusammenfassung mit beiden Türmen im Vergleich und den stärksten Räumen
 
 ---
 
@@ -199,7 +207,7 @@ Kampf-Phase:
 Das **Dorf** am Fuß des Turms. Zahnräder bauen Gebäude, die freischalten:
 
 - neue Zünfte und Räume im Pool
-- zusätzliche Etagen (9., 10., 11., 12.)
+- ~~zusätzliche Etagen~~ (entfällt im Raster, der Turm wächst ohnehin bis 3×8; Freischaltungen offen in q19)
 - neue Uhrmacher:innen
 - der Kodex (Rezepte bleiben erhalten)
 - kosmetisches Zifferblatt pro Mitternacht-Sieg
@@ -238,7 +246,7 @@ Keine Stat-Boosts kaufen, nur Optionen. Die Stärke muss aus dem Build kommen.
 | M3 | Run spielbar | Werkstatt, Vorzeichen, 12 Stunden, Speichern |
 | M4 | Balance-Runde 2 | Glocken und Wehr stärken, Zeitschleife bremsen, Stunden 2 bis 4 schwerer |
 | M5 | Raster | Turm als 3er-Raster im Spiel: Port, Werkstatt mit Drehen und Platzieren, Kampfansicht, alle Räume umgestellt (ADR 0008) |
-| M6 | Juice | Animationen, Partikel, Haptik, Klang |
+| M6 | Juice | Animationen, Partikel, Haptik, Klang; dazu Bedienung überarbeitet (Ziehen, Nachbarn sichtbar), Nachbarn über Kanten (ADR 0009), Gegner als Schatten-Runs (ADR 0010) |
 | M7 | Meta | Dorf, Kodex, Uhrmacher:innen, Freischaltungen |
 | M8 | Geister und Tagesseed | Kleines Backend auf dem vServer |
 | M9 | Store-Builds | Android und iOS |
