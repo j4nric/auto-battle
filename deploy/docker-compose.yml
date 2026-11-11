@@ -3,8 +3,9 @@
 #
 # Ports 80/443 belong to the Caddy of the household app (repo j4nric/haushalt-app,
 # infra/production). That Caddy terminates HTTPS for uhrturm-62-83-23-90.sslip.io and
-# forwards through the shared network `uhrturm-proxy` to the alias `uhrturm-web`.
-# This container publishes no ports. See docs/adr/0004.
+# forwards to the alias `uhrturm-web`: through the shared network `edge` with our own
+# entry deploy/site.caddy (ADR 0011), and until the household app drops its old block
+# also through `uhrturm-proxy` (ADR 0004). This container publishes no ports.
 
 name: uhrturm
 
@@ -18,8 +19,13 @@ services:
     networks:
       proxy:
         aliases: [uhrturm-web]
+      edge:
+        aliases: [uhrturm-web]
 
 networks:
   proxy:
     name: uhrturm-proxy
+    external: true
+  edge:
+    name: edge
     external: true

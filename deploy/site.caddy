@@ -1,0 +1,13 @@
+# Our entry in the front Caddy of the server (ADR 0011). The deploy job puts this
+# file into the shared Docker volume `caddy-sites` as uhrturm.caddy (deploy/install-site.sh);
+# the front Caddy (household app, label edge.caddy=true) imports every *.caddy file in it
+# and is reloaded without a restart. A domain change for the game needs only this repo.
+#
+# The front Caddy terminates HTTPS and forwards through the shared network `edge` to our
+# container `web` (alias uhrturm-web, deploy/docker-compose.yml, deploy/Caddyfile).
+# Each host name may appear only once on the whole server, or the front Caddy refuses
+# the new configuration.
+uhrturm-62-83-23-90.sslip.io {
+	encode zstd gzip
+	reverse_proxy uhrturm-web:80
+}

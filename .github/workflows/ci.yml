@@ -73,10 +73,20 @@ jobs:
           path: build/web
           retention-days: 7
 
+  site:
+    name: front Caddy site entry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate deploy/site.caddy
+        run: docker run --rm -v "$PWD/deploy/site.caddy:/etc/caddy/Caddyfile:ro" caddy:2.8-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+      - name: Shell syntax of deploy/install-site.sh
+        run: sh -n deploy/install-site.sh
+
   deploy:
     name: deploy to vServer
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: [lab, game]
+    needs: [lab, game, site]
     runs-on: ubuntu-latest
     concurrency:
       group: deploy
@@ -119,7 +129,7 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key "$USER@$HOST" "mkdir -p '$DEST/site'"
           rsync -az --delete -e "ssh -i ~/.ssh/deploy_key" site/ "$USER@$HOST:$DEST/site/"
-          rsync -az -e "ssh -i ~/.ssh/deploy_key" deploy/docker-compose.yml deploy/Caddyfile "$USER@$HOST:$DEST/"
+          rsync -az -e "ssh -i ~/.ssh/deploy_key" deploy/docker-compose.yml deploy/Caddyfile deploy/site.caddy deploy/install-site.sh "$USER@$HOST:$DEST/"
       - name: Start or update container
         if: steps.secrets.outputs.ready == 'true'
         env:
@@ -128,10 +138,13 @@ jobs:
           DEST: ${{ secrets.DEPLOY_PATH }}
         run: |
           ssh -i ~/.ssh/deploy_key "$USER@$HOST" "
+            set -e
             docker network inspect uhrturm-proxy >/dev/null 2>&1 || docker network create uhrturm-proxy
+            docker network inspect edge >/dev/null 2>&1 || docker network create edge
             cd '$DEST' && docker compose up -d --remove-orphans
             docker compose exec -T web caddy reload --config /etc/caddy/Caddyfile
             docker compose ps
+            sh ./install-site.sh
           "
       - name: Check public address
         if: steps.secrets.outputs.ready == 'true'
@@ -147,4 +160,4 @@ jobs:
             fi
             sleep 10
           done
-          echo "::warning::$url does not serve the game yet (page $page, wasm $wasm). Is the block in the household Caddy deployed?"
+          echo "::warning::$url does not serve the game yet (page $page, wasm $wasm). Is the front Caddy importing caddy-sites (deploy/site.caddy, ADR 0011)?"
