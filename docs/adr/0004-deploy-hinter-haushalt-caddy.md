@@ -1,6 +1,6 @@
 # 0004: Deploy auf den vServer hinter dem Caddy der Haushalt-App
 
-Datum: 2026-11-06 · Status: Angenommen
+Datum: 2026-11-06 · Status: Angenommen · Ergänzt durch 0011
 
 ## Kontext
 
